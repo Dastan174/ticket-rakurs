@@ -2,15 +2,11 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { EventBooking } from "@/components/booking/EventBooking";
-import { EVENTS } from "@/data/demo";
-
-export function generateStaticParams() {
-  return EVENTS.map((e) => ({ slug: e.slug }));
-}
+import { getEvent } from "@/lib/events";
 
 export async function generateMetadata({ params }: PageProps<"/events/[slug]">): Promise<Metadata> {
   const { slug } = await params;
-  const event = EVENTS.find((e) => e.slug === slug);
+  const event = await getEvent(slug);
   return { title: event ? `${event.title} — билеты | Ракурс` : "Событие не найдено" };
 }
 
@@ -25,6 +21,7 @@ export default function EventPage({ params }: PageProps<"/events/[slug]">) {
 
 async function Event({ params }: { params: PageProps<"/events/[slug]">["params"] }) {
   const { slug } = await params;
-  if (!EVENTS.some((e) => e.slug === slug)) notFound();
-  return <EventBooking slug={slug} />;
+  const event = await getEvent(slug);
+  if (!event) notFound();
+  return <EventBooking event={event} />;
 }

@@ -1,19 +1,46 @@
 "use client";
 
 // Экран выбора мест: 3D-зал, панель с местом и корзиной.
-// Сейчас на демо-данных; бронь через rpc('hold_seats') подключается на этапе 1 (docs/booking.md).
+// Площадка и цены приходят с сервера, статусы мест — отдельным rpc('event_seat_map') из браузера (свежие, не кешируются).
+// Бронь через rpc('hold_seats') — следующий шаг этапа 1 (docs/booking.md).
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { VenueViewer } from "@/components/venue/VenueViewer";
-import { EVENTS, LAYOUTS, ZONE_COLORS, ZONE_NAMES, demoSold, formatSom } from "@/data/demo";
+import type { EventDetail } from "@/lib/events";
+import { CATEGORY_LABELS, formatEventDate, formatSom } from "@/lib/format";
+import { createClient } from "@/lib/supabase/client";
 import { generateSeats } from "@/lib/venue/generate";
+import { applySeatMap, type SeatMapRow } from "@/lib/venue/seat-map";
 
-export function EventBooking({ slug }: { slug: string }) {
-  const event = EVENTS.find((e) => e.slug === slug)!;
-  const layout = LAYOUTS[event.layout];
-  const seats = useMemo(() => generateSeats(layout), [layout]);
-  const unavailable = useMemo(() => demoSold(event.seed, seats.length), [event.seed, seats.length]);
+type SeatState = ReturnType<typeof applySeatMap>;
+
+export function EventBooking({ event }: { event: EventDetail }) {
+  const base = useMemo(() => generateSeats(event.layout), [event.layout]);
+  const [state, setState] = useState<SeatState | null>(null);
+  const [loadError, setLoadError] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    createClient()
+      .rpc("event_seat_map", { p_event_id: event.id })
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        try {
+          if (error || !data) throw error ?? new Error("пустой ответ");
+          setState(applySeatMap(base, data as SeatMapRow));
+        } catch (e) {
+          console.error(e);
+          setLoadError(true);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [event.id, base]);
+
+  const seats = state?.seats ?? base;
+  const zoneColors = useMemo(() => event.zones.map((z) => z.color), [event.zones]);
   const [selected, setSelected] = useState<ReadonlySet<number>>(new Set());
   const [lastId, setLastId] = useState<number | null>(null);
   const [viewSeat, setViewSeat] = useState<number | null>(null);
@@ -23,7 +50,8 @@ export function EventBooking({ slug }: { slug: string }) {
     const s = seats[id];
     return `Сектор ${s.sector} · Ряд ${s.row} · Место ${s.number}`;
   };
-  const price = (id: number) => event.prices[seats[id].zone];
+  const price = (id: number) => event.zones[seats[id].zone]?.price ?? 0;
+  const unavailable = state?.unavailable;
   const toggle = (id: number, force?: boolean) => {
     setSelected((prev) => {
       const next = new Set(prev);
@@ -38,12 +66,18 @@ export function EventBooking({ slug }: { slug: string }) {
 
   return (
     <div className="grid min-h-0 flex-1 grid-rows-[62vh_auto] md:h-[calc(100dvh-3.5rem)] md:grid-cols-[1fr_340px] md:grid-rows-1">
-      <div className="relative min-h-0">
+      <div className="relative min-h-0 bg-black">
+        {!unavailable && (
+          <p className="absolute inset-0 grid place-items-center px-4 text-center text-mute" role="status">
+            {loadError ? "Не удалось загрузить места. Обновите страницу." : "Загружаем места…"}
+          </p>
+        )}
+        {unavailable && (
         <VenueViewer
-          layout={layout}
+          layout={event.layout}
           seats={seats}
           unavailable={unavailable}
-          zoneColors={ZONE_COLORS}
+          zoneColors={zoneColors}
           selected={selected}
           screenTitle={event.title}
           viewSeat={viewSeat}
@@ -55,7 +89,8 @@ export function EventBooking({ slug }: { slug: string }) {
           onHover={(id, x, y) => setTip(id === null ? null : { id, x, y })}
           onExitView={() => setViewSeat(null)}
         />
-        {tip && viewSeat === null && (
+        )}
+        {tip && unavailable && viewSeat === null && (
           <div
             className="pointer-events-none absolute whitespace-nowrap rounded-lg border border-white/15 bg-black/80 px-2.5 py-1.5 text-[13px]"
             style={{ left: tip.x + 12, top: tip.y + 12 }}
@@ -63,7 +98,7 @@ export function EventBooking({ slug }: { slug: string }) {
             {seatName(tip.id)} — {unavailable[tip.id] ? "продано" : <b>{formatSom(price(tip.id))}</b>}
           </div>
         )}
-        {viewSeat === null ? (
+        {!unavailable ? null : viewSeat === null ? (
           <p className="absolute bottom-3.5 left-1/2 max-w-[calc(100%-24px)] -translate-x-1/2 truncate rounded-lg bg-black/70 px-3 py-1.5 text-[13px] text-zinc-300">
             Крути схему мышью · колесо — зум · клик — выбрать место · двойной клик — вид с места
           </p>
@@ -93,16 +128,16 @@ export function EventBooking({ slug }: { slug: string }) {
         <Link href="/" className="text-sm text-mute hover:text-fg">
           ← Все события
         </Link>
-        <div className="text-xs font-bold uppercase tracking-wider text-accent">{event.category}</div>
+        <div className="text-xs font-bold uppercase tracking-wider text-accent">{CATEGORY_LABELS[event.category]}</div>
         <h1 className="text-[22px] font-bold leading-tight">{event.title}</h1>
         <p className="text-mute">
-          {event.date} · {layout.name}
+          {formatEventDate(event.startsAt)} · {event.venueName}
         </p>
         <ul className="flex flex-wrap gap-x-3.5 gap-y-2 text-[13px] text-mute">
-          {ZONE_NAMES.map((name, i) => (
-            <li key={name} className="flex items-center gap-1.5">
-              <i className="inline-block size-2.5 rounded-sm" style={{ background: ZONE_COLORS[i] }} />
-              {name} {formatSom(event.prices[i])}
+          {event.zones.map((z) => (
+            <li key={z.name} className="flex items-center gap-1.5">
+              <i className="inline-block size-2.5 rounded-sm" style={{ background: z.color }} />
+              {z.name} {formatSom(z.price)}
             </li>
           ))}
           <li className="flex items-center gap-1.5">
@@ -120,7 +155,7 @@ export function EventBooking({ slug }: { slug: string }) {
             "Нажми на место на схеме. Двойной клик — сразу вид с места."
           ) : (
             <>
-              <div className="text-mute">{ZONE_NAMES[seats[lastId].zone]}</div>
+              <div className="text-mute">{event.zones[seats[lastId].zone]?.name}</div>
               <b className="text-base">{seatName(lastId)}</b>
               <div className="mb-2.5 mt-1.5">{formatSom(price(lastId))}</div>
               <button type="button" className="btn-primary w-full" onClick={() => setViewSeat(lastId)}>
@@ -152,7 +187,8 @@ export function EventBooking({ slug }: { slug: string }) {
         <button type="button" className="btn-primary" disabled title="Бронь и оплата подключаются на этапе 1">
           Оформить
         </button>
-        <p className="text-xs text-mute">Демо: бронь и оплата подключаются на этапе 1.</p>
+        {event.refundRules && <p className="text-xs text-mute">Возврат: {event.refundRules}</p>}
+        <p className="text-xs text-mute">Бронь и оплата подключаются на этапе 1.</p>
       </aside>
     </div>
   );

@@ -39,6 +39,7 @@ npm run build        # проверка сборки Next.js
 npm run preview      # сборка под Cloudflare и локальный запуск в workerd
 npm run db:start     # локальный Supabase (нужен Docker)
 npm run db:reset     # пересоздать локальную БД из миграций
+npm run db:load-demo # загрузить демо-площадки и события (повторный запуск безопасен)
 npm run db:types     # сгенерировать src/lib/supabase/database.types.ts
 ```
 
@@ -52,7 +53,9 @@ src/components/venue/     3D-зал (VenueViewer)
 src/components/booking/   выбор мест, корзина
 src/lib/venue/            формат площадки, генерация мест, высота пола — чистые функции
 src/lib/supabase/         клиенты Supabase (client.ts — браузер, server.ts — сервер)
-src/data/demo.ts          демо-данные до подключения Supabase
+src/lib/events.ts         чтение каталога и события из Supabase (сервер)
+src/data/demo.ts          демо-площадки и события — источник для scripts/load-demo.mts
+scripts/                  служебные скрипты (запуск через node, без сборки)
 supabase/migrations/      SQL-миграции — единственный способ менять схему
 tests/                    vitest; tests/db — SQL-тесты на PGlite
 docs/                     документация, ТЗ, решения (ADR)

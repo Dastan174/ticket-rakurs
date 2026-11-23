@@ -22,8 +22,9 @@
    npx supabase link --project-ref <ref>
    npx supabase db push
    ```
-3. Проверить, что `pg_cron` включён (Database → Extensions) и задача `expire-holds` есть в `cron.job`.
-4. Auth: включить e-mail OTP, настроить SMTP (Amazon SES или Brevo), позже вход через Telegram.
+3. Загрузить демо-данные (по желанию): прописать в `.env.local` URL и секретный ключ удалённого проекта и выполнить `npm run db:load-demo`.
+4. Проверить, что `pg_cron` включён (Database → Extensions) и задача `expire-holds` есть в `cron.job`.
+5. Auth: включить e-mail OTP, настроить SMTP (Amazon SES или Brevo), позже вход через Telegram.
 
 ## Cloudflare
 

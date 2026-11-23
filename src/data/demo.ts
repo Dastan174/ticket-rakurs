@@ -1,4 +1,6 @@
-// Демо-данные до подключения Supabase. Тот же формат, что в venue_layouts.params и events.
+// Демо-площадки и события. Загружаются в Supabase скриптом scripts/load-demo.mts (npm run db:load-demo).
+// Только type-импорты: файл запускается напрямую через Node.
+import type { EventCategory } from "@/lib/format";
 import type { VenueLayout } from "@/lib/venue/types";
 
 export const LAYOUTS: Record<string, VenueLayout> = {
@@ -43,35 +45,20 @@ export const LAYOUTS: Record<string, VenueLayout> = {
 
 export interface DemoEvent {
   slug: string;
-  category: "Концерт" | "Спорт" | "Театр" | "Юмор" | "Детям";
+  category: EventCategory;
   title: string;
-  date: string;
+  /** ISO с часовым поясом Бишкека */
+  startsAt: string;
   layout: keyof typeof LAYOUTS;
   /** Цена по зонам, сом: [VIP, стандарт, эконом] */
   prices: number[];
-  seed: number;
 }
 
 export const ZONE_NAMES = ["VIP", "Стандарт", "Эконом"];
 export const ZONE_COLORS = ["#f5b942", "#5b8cff", "#2bc4b6"];
 
 export const EVENTS: DemoEvent[] = [
-  { slug: "synthwave-night", category: "Концерт", title: "Ночь синтвейва", date: "12 декабря, 19:00", layout: "arena", prices: [9000, 5500, 2500], seed: 11 },
-  { slug: "jazz-med", category: "Концерт", title: "Джаз-оркестр «Медь»", date: "20 декабря, 20:00", layout: "arena", prices: [6000, 3500, 1800], seed: 23 },
-  { slug: "cup-final", category: "Спорт", title: "Финал кубка: Сокол — Титан", date: "28 декабря, 17:00", layout: "stadium", prices: [4500, 2500, 1200], seed: 37 },
+  { slug: "synthwave-night", category: "concert", title: "Ночь синтвейва", startsAt: "2026-12-12T19:00:00+06:00", layout: "arena", prices: [9000, 5500, 2500] },
+  { slug: "jazz-med", category: "concert", title: "Джаз-оркестр «Медь»", startsAt: "2026-12-20T20:00:00+06:00", layout: "arena", prices: [6000, 3500, 1800] },
+  { slug: "cup-final", category: "sport", title: "Финал кубка: Сокол — Титан", startsAt: "2026-12-28T17:00:00+06:00", layout: "stadium", prices: [4500, 2500, 1200] },
 ];
-
-/** Детерминированный «продано» для демо, одинаковый на сервере и клиенте */
-export function demoSold(seed: number, count: number, share = 0.32): Uint8Array {
-  const out = new Uint8Array(count);
-  let s = seed;
-  for (let i = 0; i < count; i++) {
-    s = (s + 0x6d2b79f5) | 0;
-    let t = Math.imul(s ^ (s >>> 15), 1 | s);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    out[i] = ((t ^ (t >>> 14)) >>> 0) / 4294967296 < share ? 1 : 0;
-  }
-  return out;
-}
-
-export const formatSom = (n: number) => `${n.toLocaleString("ru-RU")} сом`;

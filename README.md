@@ -2,13 +2,15 @@
 
 Билеты на концерты, театр и спорт в Бишкеке. Перед покупкой можно сесть на выбранное место в 3D, осмотреться и пройтись по залу.
 
-**Статус:** этап 0 — каркас проекта, схема БД с бронью, 3D-зал на демо-данных. План — [docs/roadmap.md](docs/roadmap.md).
+**Статус:** этап 1 — каталог и выбор мест работают на Supabase, дальше вход и бронь. План — [docs/roadmap.md](docs/roadmap.md).
 
 ## Быстрый старт
 
 ```bash
 npm install
-cp .env.example .env.local   # пока можно не заполнять: страницы работают на демо-данных
+npm run db:start             # локальный Supabase в Docker, печатает URL и ключи
+cp .env.example .env.local   # вписать URL, publishable и secret ключи из вывода db:start
+npm run db:load-demo         # демо-площадки и события
 npm run dev                  # http://localhost:3000
 ```
 
@@ -26,6 +28,7 @@ npm run dev                  # http://localhost:3000
 | `npm run deploy` | Деплой на Cloudflare |
 | `npm run db:start` | Локальный Supabase (нужен Docker) |
 | `npm run db:reset` | Пересоздать локальную БД из миграций |
+| `npm run db:load-demo` | Загрузить демо-площадки и события |
 | `npm run db:types` | Сгенерировать TypeScript-типы БД |
 
 ## Стек
