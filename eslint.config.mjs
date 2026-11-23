@@ -15,6 +15,8 @@ const eslintConfig = defineConfig([
     ".open-next/**",
     ".wrangler/**",
     "cloudflare-env.d.ts",
+    "scripts/measure-event-page.js",
+    ".playwright-mcp/**",
   ]),
 ]);
 

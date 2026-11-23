@@ -4,10 +4,10 @@
 // Площадка и цены приходят с сервера, статусы мест — отдельным rpc('event_seat_map') из браузера (свежие, не кешируются).
 // Бронь через rpc('hold_seats') — следующий шаг этапа 1 (docs/booking.md).
 
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, Check, Close, Eye } from "@/components/icons";
-import { VenueViewer } from "@/components/venue/VenueViewer";
 import type { EventDetail } from "@/lib/events";
 import { CATEGORY_LABELS, formatEventDate, formatSom } from "@/lib/format";
 import { createClient } from "@/lib/supabase/client";
@@ -15,6 +15,10 @@ import { generateSeats } from "@/lib/venue/generate";
 import { applySeatMap, type SeatMapRow } from "@/lib/venue/seat-map";
 
 type SeatState = ReturnType<typeof applySeatMap>;
+
+// Three.js — самый тяжёлый кусок страницы. Грузим его отдельно: цены, места и кнопка работают раньше 3D.
+const loadViewer = () => import("@/components/venue/VenueViewer");
+const VenueViewer = dynamic(() => loadViewer().then((m) => m.VenueViewer), { ssr: false });
 
 const ticketWord = (n: number) => (n % 10 === 1 && n % 100 !== 11 ? "место" : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? "места" : "мест");
 
@@ -33,6 +37,7 @@ export function EventBooking({ event }: { event: EventDetail }) {
 
   useEffect(() => {
     let cancelled = false;
+    void loadViewer(); // качаем 3D параллельно с картой мест, а не после неё
     createClient()
       .rpc("event_seat_map", { p_event_id: event.id })
       .then(({ data, error }) => {

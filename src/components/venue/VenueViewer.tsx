@@ -10,6 +10,7 @@ import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import { ArrowLeft } from "@/components/icons";
 import { groundHeight } from "@/lib/venue/generate";
+import { nearestSeat } from "@/lib/venue/pick";
 import type { Seat, VenueLayout } from "@/lib/venue/types";
 
 export interface VenueViewerProps {
@@ -54,6 +55,7 @@ export function VenueViewer(props: VenueViewerProps) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const engineRef = useRef<Engine | null>(null);
+  const prevViewSeat = useRef<number | null>(null);
   // Последние пропсы для обработчиков внутри three.js без пересоздания сцены
   const live = useRef(props);
   useEffect(() => {
@@ -66,8 +68,10 @@ export function VenueViewer(props: VenueViewerProps) {
     const { layout, seats } = props;
     const b = layout.bowl;
 
-    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    // Слабое устройство: без сглаживания, плотность пикселей 1, чаша проще. Покупка не должна ждать графику.
+    const lowEnd = (navigator.hardwareConcurrency ?? 8) <= 4 || ((navigator as Navigator & { deviceMemory?: number }).deviceMemory ?? 8) <= 4;
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: !lowEnd, powerPreference: "high-performance" });
+    renderer.setPixelRatio(lowEnd ? 1 : Math.min(window.devicePixelRatio, 2));
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(layout.colors.sky);
     scene.fog = new THREE.Fog(layout.colors.sky, b.rx * 2.5, b.rx * 9);
@@ -88,7 +92,7 @@ export function VenueViewer(props: VenueViewerProps) {
     const pos: number[] = [];
     const P = (a: number, d: number, y: number) => [Math.cos(a) * (b.rx + d), y, Math.sin(a) * (b.rz + d)];
     const quad = (p1: number[], p2: number[], p3: number[], p4: number[]) => pos.push(...p1, ...p2, ...p3, ...p1, ...p3, ...p4);
-    const segs = Math.ceil((b.a1 - b.a0) * 48);
+    const segs = Math.ceil((b.a1 - b.a0) * (lowEnd ? 20 : 48));
     const top = b.base + (b.rows - 1) * b.rise;
     const dMax = b.rows * b.depth;
     for (let k = 0; k < segs; k++) {
@@ -123,6 +127,13 @@ export function VenueViewer(props: VenueViewerProps) {
     });
     mesh.computeBoundingSphere();
     scene.add(mesh);
+    // Центры кресел для выбора по экрану (nearestSeat) — вместо raycast по 10 000 инстансов
+    const pts = new Float32Array(seats.length * 3);
+    seats.forEach((s, i) => {
+      pts[i * 3] = s.x;
+      pts[i * 3 + 1] = s.y + 0.5;
+      pts[i * 3 + 2] = s.z;
+    });
 
     const floor = new THREE.Mesh(
       new THREE.CircleGeometry(1, 96).rotateX(-Math.PI / 2).scale(b.rx, 1, b.rz),
@@ -163,21 +174,30 @@ export function VenueViewer(props: VenueViewerProps) {
     let yaw = 0, pitch = 0, groundY = 0, standing = false;
     const keys = new Set<string>();
     const ndc = new THREE.Vector2();
-    const ray = new THREE.Raycaster();
+    const vp = new THREE.Matrix4();
+    let viewW = 1, viewH = 1;
+    // Рендер по требованию: кадр рисуется только когда что-то изменилось
+    let dirty = true;
+    let lastMove = 0;
+    let centerDone = false;
     let needPick = false;
     // Вспышка выбора: только что выбранное кресло на мгновение светлеет и садится в золото
     const flashes = new Map<number, number>();
     let prevSelected = new Set<number>(live.current.selected);
     const reducedMotion = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    // Точки опроса «что в кадре»: центр, затем чуть ниже/выше/по бокам — если в центре пол или сцена
-    const PROBES = [[0, 0], [0, -0.3], [0, 0.3], [-0.3, 0], [0.3, 0], [0, -0.6]].map(([x, y]) => new THREE.Vector2(x, y));
     let centerId: number | null = null;
-    let centerClock = 0;
     let mouse = { x: 0, y: 0 };
     let down: { x: number; y: number; sx: number; sy: number } | null = null;
 
+    controls.addEventListener("change", () => {
+      dirty = true;
+      lastMove = performance.now();
+      centerDone = false;
+    });
+
     const setOverview = () => {
       mode = "overview";
+      centerDone = false;
       controls.enabled = true;
       camera.position.set(...layout.overview.pos);
       controls.target.set(...layout.overview.target);
@@ -187,14 +207,15 @@ export function VenueViewer(props: VenueViewerProps) {
 
     const paint = () => {
       const { unavailable, selected, zoneColors } = live.current;
-      const tmp = new THREE.Color();
+      const zoneCols = zoneColors.map((c) => new THREE.Color(c)); // цвета зон один раз, а не разбор строки на каждое кресло
       seats.forEach((s, i) => {
-        const c = i === hoverIdx && mode === "overview" ? C_HOVER : selected.has(i) ? C_SEL : unavailable[i] ? C_SOLD : tmp.set(zoneColors[s.zone]);
+        const c = i === hoverIdx && mode === "overview" ? C_HOVER : selected.has(i) ? C_SEL : unavailable[i] ? C_SOLD : zoneCols[s.zone];
         mesh.setColorAt(i, c);
       });
       if (!reducedMotion()) for (const id of selected) if (!prevSelected.has(id)) flashes.set(id, performance.now());
       prevSelected = new Set(selected);
       mesh.instanceColor!.needsUpdate = true;
+      dirty = true;
     };
     paint();
 
@@ -227,11 +248,12 @@ export function VenueViewer(props: VenueViewerProps) {
     };
     engineRef.current = { paint, enterSeat, exitSeat, keys };
 
-    const pick = () => {
-      ray.setFromCamera(ndc, camera);
-      const hit = ray.intersectObject(mesh)[0];
-      return hit?.instanceId ?? null;
+    const pickAt = (x: number, y: number, maxPx?: number) => {
+      camera.updateMatrixWorld();
+      vp.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+      return nearestSeat(pts, vp.elements, x, y, { halfW: viewW / 2, halfH: viewH / 2, radiusM: 0.32, minPx: 7, maxPx });
     };
+    const pick = () => pickAt(ndc.x, ndc.y);
     const setNdc = (e: PointerEvent | MouseEvent) => {
       const r = canvas.getBoundingClientRect();
       mouse = { x: e.clientX - r.left, y: e.clientY - r.top };
@@ -257,8 +279,10 @@ export function VenueViewer(props: VenueViewerProps) {
         }
       }
       const ty = groundY + (standing ? 1.65 : 1.2);
-      camera.position.y += (ty - camera.position.y) * Math.min(1, dt * 10);
+      const dy = ty - camera.position.y;
+      camera.position.y += dy * Math.min(1, dt * 10);
       camera.rotation.set(pitch, yaw, 0);
+      if (f || s || Math.abs(dy) > 0.002) dirty = true;
     };
 
     // Экспоненциальное замедление: камера срывается быстро и мягко садится на место.
@@ -270,6 +294,7 @@ export function VenueViewer(props: VenueViewerProps) {
       const dt = Math.min((t - last) / 1000, 0.05);
       last = t;
       if (fly) {
+        dirty = true;
         fly.t += dt / FLY_SECONDS;
         const k = ease(Math.min(1, fly.t));
         camera.position.lerpVectors(fly.p0, fly.p1, k);
@@ -281,15 +306,10 @@ export function VenueViewer(props: VenueViewerProps) {
         }
       } else if (mode === "overview") {
         controls.update();
-        centerClock += dt;
-        if (centerClock > 0.3) {
-          centerClock = 0;
-          let hit: number | null = null;
-          for (const p of PROBES) {
-            ray.setFromCamera(p, camera);
-            hit = ray.intersectObject(mesh)[0]?.instanceId ?? null;
-            if (hit !== null) break;
-          }
+        // «Что в кадре» — один раз, когда камера остановилась
+        if (!centerDone && t - lastMove > 250) {
+          centerDone = true;
+          const hit = pickAt(0, 0, Math.min(viewW, viewH) * 0.3);
           if (hit !== centerId) {
             centerId = hit;
             live.current.onCenter?.(hit);
@@ -316,8 +336,12 @@ export function VenueViewer(props: VenueViewerProps) {
           } else mesh.setColorAt(id, flashColor.copy(C_HOVER).lerp(C_SEL, ease(Math.max(0, k))));
         }
         mesh.instanceColor!.needsUpdate = true;
+        dirty = true;
       }
-      renderer.render(scene, camera);
+      if (dirty) {
+        renderer.render(scene, camera);
+        dirty = false;
+      }
     };
     raf = requestAnimationFrame(loop);
 
@@ -327,6 +351,9 @@ export function VenueViewer(props: VenueViewerProps) {
       renderer.setSize(w, h, false);
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
+      viewW = w;
+      viewH = h;
+      dirty = true;
     });
     ro.observe(wrap);
 
@@ -336,6 +363,7 @@ export function VenueViewer(props: VenueViewerProps) {
       if (mode === "view" && down) {
         yaw -= (e.clientX - down.x) * 0.0035;
         pitch = Math.max(-1.3, Math.min(1.3, pitch - (e.clientY - down.y) * 0.0035));
+        dirty = true;
         down = { ...down, x: e.clientX, y: e.clientY };
       }
     };
@@ -415,7 +443,10 @@ export function VenueViewer(props: VenueViewerProps) {
 
   useEffect(() => {
     const e = engineRef.current;
-    if (!e) return;
+    const prev = prevViewSeat.current;
+    prevViewSeat.current = props.viewSeat;
+    // При монтировании камера уже на общем плане — перелёт «в обзор» был бы лишней секундой рендера
+    if (!e || prev === props.viewSeat) return;
     if (props.viewSeat === null) e.exitSeat();
     else e.enterSeat(props.viewSeat);
   }, [props.viewSeat]);

@@ -14,6 +14,9 @@ tools: Read, Grep, Glob, Edit, Write, Bash
 - Порядок мест из `generateSeats` стабилен — от него зависят id мест в БД. Меняешь генерацию → это новая версия площадки (`venue_layouts.version`), опиши в ответе.
 - Новое поле формата площадки → обнови `src/lib/venue/types.ts`, `docs/venue-format.md`, демо в `src/data/demo.ts`.
 - Бюджет: сцена ≤ 3 МБ, 60 FPS на среднем ноутбуке, ≥ 30 FPS на бюджетном Android. `devicePixelRatio` ограничен 2.
+- Рендер по требованию: любое изменение, видимое на экране, ставит `dirty = true`; без него кадр не рисуется. Никаких тяжёлых операций в каждом кадре.
+- Выбор кресла — `nearestSeat` из `src/lib/venue/pick.ts`, не `Raycaster` по `InstancedMesh` (на 10 000 кресел это десятки мс на телефоне).
+- Замер скорости: production-сборка (`npm run build && npx next start -p 3200`) и `scripts/measure-event-page.js` (через Playwright MCP) — CPU ×4, 4G, медиана трёх прогонов.
 - Всё, что создаёшь (геометрии, материалы, текстуры, слушатели), освобождай в cleanup эффекта.
 - Управление: мышь/палец — осмотр, WASD/стрелки — ходьба, Esc — выход; на тач-устройствах кнопки-стрелки.
 
