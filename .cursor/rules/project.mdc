@@ -1,0 +1,13 @@
+---
+description: Правила проекта Ракурс
+alwaysApply: true
+---
+
+Все правила проекта — в `AGENTS.md` в корне репозитория. Прочитай его перед работой.
+
+Самое важное:
+- Next.js 16: сначала `node_modules/next/dist/docs/`, `params` — Promise, данные запроса внутри `<Suspense>`.
+- Статусы мест меняются только SQL-функциями из `supabase/migrations/` (hold_seats, confirm_payment и др.), не из TypeScript.
+- Схема БД — только новыми миграциями, RLS на каждой таблице.
+- `SUPABASE_SECRET_KEY` — только на сервере.
+- Перед «готово»: `npm run typecheck && npm run lint && npm test`.

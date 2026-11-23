@@ -1,0 +1,508 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ракурс — билеты с видом с места</title>
+<style>
+:root{--bg:#0d0f14;--panel:#151922;--line:#262c38;--text:#e8ebf1;--mute:#8b93a5;--acc:#4ade80;--vip:#f5b942;--std:#5b8cff;--eco:#2bc4b6;--sold:#3a3f4b}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text)}
+button{font:inherit;cursor:pointer;color:inherit}
+header{display:flex;align-items:center;gap:16px;height:56px;padding:0 20px;border-bottom:1px solid var(--line)}
+.logo{font-weight:800;font-size:20px;letter-spacing:.3px;cursor:pointer}
+.logo span{color:var(--acc)}
+.mute{color:var(--mute)}
+/* home */
+#home{max-width:1100px;margin:0 auto;padding:48px 16px}
+#home h1{font-size:clamp(28px,5vw,48px);margin:0 0 12px;line-height:1.1}
+#home .lead{font-size:18px;color:var(--mute);max-width:620px;margin:0 0 36px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
+.ev{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;text-align:left;padding:0;transition:transform .15s,border-color .15s}
+.ev:hover{transform:translateY(-3px);border-color:#3b4458}
+.ev .cover{height:130px;display:flex;align-items:flex-end;padding:14px;font-size:13px;font-weight:600;letter-spacing:.5px;text-transform:uppercase}
+.ev .body{padding:14px 16px 18px}
+.ev h3{margin:0 0 6px;font-size:18px}
+.ev .from{margin-top:12px;font-weight:700;color:var(--acc)}
+/* event */
+#event{display:grid;grid-template-columns:1fr 340px;height:calc(100vh - 56px)}
+#wrap{position:relative;overflow:hidden;background:#000}
+#c{width:100%;height:100%;display:block;touch-action:none}
+.panel{background:var(--panel);border-left:1px solid var(--line);padding:18px;overflow:auto;display:flex;flex-direction:column;gap:12px}
+.panel h2{margin:0;font-size:22px}
+.panel h3{margin:8px 0 0;font-size:15px}
+.link{background:none;border:0;padding:0;color:var(--mute);text-align:left}
+.link:hover{color:var(--text)}
+.kicker{font-size:12px;text-transform:uppercase;letter-spacing:.6px;color:var(--acc);font-weight:700}
+.legend{display:flex;flex-wrap:wrap;gap:8px 14px;font-size:13px;color:var(--mute)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.card{background:#0f1218;border:1px solid var(--line);border-radius:10px;padding:12px;font-size:14px}
+.card b{font-size:16px}
+#cart{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;font-size:14px}
+#cart li{display:flex;align-items:center;gap:8px}
+#cart li span{flex:1}
+#cart li button{background:none;border:0;color:var(--mute);font-size:18px;line-height:1}
+.total{display:flex;justify-content:space-between;border-top:1px solid var(--line);padding-top:10px}
+.primary{background:var(--acc);color:#05200f;border:0;border-radius:10px;padding:12px 16px;font-weight:700}
+.primary:disabled{opacity:.4;cursor:not-allowed}
+.ghost{background:#ffffff14;border:1px solid #ffffff22;border-radius:10px;padding:9px 14px;backdrop-filter:blur(6px)}
+.ghost:hover{background:#ffffff24}
+/* overlays */
+#tip{position:absolute;pointer-events:none;background:#000c;border:1px solid #ffffff22;border-radius:8px;padding:6px 10px;font-size:13px;white-space:nowrap;transform:translate(12px,12px)}
+#ovHint,.hint{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);background:#000a;padding:7px 12px;border-radius:8px;font-size:13px;color:#cfd5e1;white-space:nowrap;max-width:calc(100% - 24px);overflow:hidden;text-overflow:ellipsis}
+.hud-top{position:absolute;top:12px;left:12px;right:12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+#seatLabel{margin-left:auto;background:#000a;padding:8px 12px;border-radius:10px;font-size:14px;display:flex;gap:10px;align-items:center}
+.pad{position:absolute;right:16px;bottom:56px;display:none;grid-template-columns:repeat(3,52px);grid-template-rows:repeat(2,52px);gap:6px}
+.pad button{background:#ffffff1f;border:1px solid #ffffff33;border-radius:12px;font-size:18px;touch-action:none;user-select:none}
+.pad [data-k=f]{grid-column:2}
+.pad [data-k=l]{grid-column:1;grid-row:2}
+.pad [data-k=b]{grid-column:2;grid-row:2}
+.pad [data-k=r]{grid-column:3;grid-row:2}
+@media (pointer:coarse){.pad{display:grid}}
+/* dialog */
+dialog{background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:14px;padding:22px;width:min(420px,calc(100vw - 32px))}
+dialog::backdrop{background:#000a}
+dialog h2{margin:0 0 4px}
+dialog label{display:block;font-size:13px;color:var(--mute);margin-top:12px}
+dialog input{width:100%;margin-top:4px;padding:10px 12px;border-radius:8px;border:1px solid var(--line);background:#0f1218;color:var(--text);font:inherit}
+dialog .row{display:flex;gap:8px;margin-top:18px}
+dialog .row>*{flex:1}
+.ticket{border:1px dashed #3b4458;border-radius:10px;padding:10px 12px;margin-top:8px;font-size:14px}
+.ticket code{color:var(--acc);font-size:15px}
+@media (max-width:800px){
+  #event{grid-template-columns:1fr;grid-template-rows:62vh auto;height:auto}
+  .panel{border-left:0;border-top:1px solid var(--line)}
+  #ovHint,.hint{font-size:12px}
+}
+</style>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+</head>
+<body>
+<header><div class="logo" id="logo">Ракурс<span>.</span></div><span class="mute">билеты с видом с места</span></header>
+
+<section id="home">
+  <h1>Сначала посмотри — потом покупай</h1>
+  <p class="lead">Выбери место на 3D-схеме, сядь на него и осмотрись: пройдись по ряду, проверь, что сцену ничего не закрывает.</p>
+  <div class="grid" id="events"></div>
+</section>
+
+<section id="event" hidden>
+  <div id="wrap">
+    <canvas id="c"></canvas>
+    <div id="tip" hidden></div>
+    <div id="ovHint">Крути схему мышью · колесо — зум · клик — выбрать место · двойной клик — вид с места</div>
+    <div id="hud" hidden>
+      <div class="hud-top">
+        <button class="ghost" id="exitView">← К схеме</button>
+        <button class="ghost" id="resetSeat">Сесть на место</button>
+        <div id="seatLabel"></div>
+      </div>
+      <div class="hint">Тяни — осмотреться · WASD / стрелки — идти · Shift — быстрее · Esc — выход</div>
+      <div class="pad"><button data-k="f">▲</button><button data-k="l">◀</button><button data-k="b">▼</button><button data-k="r">▶</button></div>
+    </div>
+  </div>
+  <aside class="panel">
+    <button class="link" id="backHome">← Все события</button>
+    <div class="kicker" id="evKind"></div>
+    <h2 id="evTitle"></h2>
+    <div class="mute" id="evMeta"></div>
+    <div class="legend" id="legend"></div>
+    <div class="card" id="seatInfo"></div>
+    <h3>Корзина</h3>
+    <ul id="cart"></ul>
+    <div class="total"><span>Итого</span><b id="total"></b></div>
+    <button class="primary" id="buyBtn" disabled>Оформить</button>
+  </aside>
+</section>
+
+<dialog id="dlg"></dialog>
+
+<script type="module">
+import * as THREE from 'three';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
+
+const CUR = '₽';
+const $ = s => document.querySelector(s);
+const fmt = n => n.toLocaleString('ru-RU') + ' ' + CUR;
+const TIERS = [{name:'VIP', c:0xf5b942}, {name:'Стандарт', c:0x5b8cff}, {name:'Эконом', c:0x2bc4b6}];
+const C_SOLD = new THREE.Color(0x3a3f4b), C_SEL = new THREE.Color(0x4ade80), C_HOVER = new THREE.Color(0xffffff);
+
+// Площадки описаны параметрами — зал строится из них, моделить вручную не нужно.
+const VENUES = {
+  arena: {name:'Арена «Север»', type:'concert', RX:22, RZ:16, rows:14, depth:.85, rise:.42, base:1.2,
+    a0:-2.55, a1:2.55, sectors:10, spacing:.55, sky:0x07080d,
+    focus:[-17,3.5,0], overview:{pos:[30,28,28], target:[-3,2,0]},
+    tier:(a,r,p) => { const d = Math.hypot(p.x+17, p.z); return d < 18 ? 0 : d < 32 ? 1 : 2; }},
+  stadium: {name:'Стадион «Центральный»', type:'football', RX:57, RZ:39, rows:20, depth:.85, rise:.45, base:1.5,
+    a0:-Math.PI, a1:Math.PI, sectors:16, spacing:.6, sky:0x9fc7ee,
+    focus:[0,0,0], overview:{pos:[70,62,78], target:[0,0,0]},
+    tier:(a,r) => { const s = Math.abs(Math.sin(a)); return s > .8 && r < 12 ? 0 : s > .5 ? 1 : 2; }},
+};
+const EVENTS = [
+  {id:1, kind:'Концерт', title:'Ночь синтвейва', date:'12 декабря, 19:00', venue:'arena', prices:[9000,5500,2500], seed:11, cover:'linear-gradient(135deg,#7c3aed,#db2777)'},
+  {id:2, kind:'Концерт', title:'Джаз-оркестр «Медь»', date:'20 декабря, 20:00', venue:'arena', prices:[6000,3500,1800], seed:23, cover:'linear-gradient(135deg,#b45309,#f59e0b)'},
+  {id:3, kind:'Футбол', title:'Финал кубка: Сокол — Титан', date:'28 декабря, 17:00', venue:'stadium', prices:[4500,2500,1200], seed:37, cover:'linear-gradient(135deg,#047857,#22c55e)'},
+];
+
+function rng(seed){ return () => { seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+
+// Высота пола в точке (x,z): 0 внутри поля, ступень ряда на трибуне, null — стена.
+function ground(V, x, z){
+  if (x*x/(V.RX*V.RX) + z*z/(V.RZ*V.RZ) < 1)
+    return V.type === 'concert' && x < -13 && x > -21 && Math.abs(z) < 9 ? 1.5 : 0;
+  const a = Math.atan2(z/V.RZ, x/V.RX);
+  if (a < V.a0 || a > V.a1) return null;
+  const maxD = V.rows*V.depth - .3, f = d => x*x/((V.RX+d)**2) + z*z/((V.RZ+d)**2) - 1;
+  if (f(maxD) > 0) return null;
+  let lo = 0, hi = maxD;
+  for (let i = 0; i < 24; i++){ const m = (lo+hi)/2; f(m) > 0 ? lo = m : hi = m; }
+  return V.base + Math.floor(lo / V.depth) * V.rise;
+}
+// self-check
+console.assert(ground(VENUES.stadium, 0, 0) === 0, 'центр поля');
+console.assert(ground(VENUES.stadium, 0, 39 + .85*2.5) === 1.5 + 2*.45, 'третий ряд');
+console.assert(ground(VENUES.stadium, 0, 200) === null, 'за стеной');
+
+function buildSeats(V){
+  const seats = [], span = (V.a1 - V.a0) / V.sectors, gap = .035;
+  for (let s = 0; s < V.sectors; s++){
+    const sa0 = V.a0 + s*span + gap/2, sa1 = sa0 + span - gap;
+    for (let r = 0; r < V.rows; r++){
+      const d = r*V.depth + V.depth*.55, R = (V.RX + V.RZ)/2 + d;
+      const n = Math.floor((sa1 - sa0) * R / V.spacing);
+      for (let i = 0; i < n; i++){
+        const a = sa0 + (i + .5) / n * (sa1 - sa0);
+        const pos = new THREE.Vector3(Math.cos(a)*(V.RX+d), V.base + r*V.rise, Math.sin(a)*(V.RZ+d));
+        seats.push({sec:s+1, row:r+1, num:i+1, pos, tier:V.tier(a, r, pos)});
+      }
+    }
+  }
+  return seats;
+}
+
+function canvasTex(w, h, draw){
+  const c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d'));
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; return t;
+}
+const box = (w,h,d,color,x,y,z) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w,h,d), new THREE.MeshLambertMaterial({color})); m.position.set(x,y,z); return m; };
+
+function buildVenue(V, ev, seats){
+  const g = new THREE.Group();
+  scene.background = new THREE.Color(V.sky);
+  scene.fog = new THREE.Fog(V.sky, V.RX*2.5, V.RX*9);
+  const night = V.type === 'concert';
+  g.add(new THREE.HemisphereLight(0xffffff, 0x404050, night ? .7 : 1.3));
+  const sun = new THREE.DirectionalLight(0xffffff, night ? .6 : 1.6); sun.position.set(30, 60, 20); g.add(sun);
+
+  // чаша трибун: ступени + передняя и задняя стены
+  const pos = [], P = (a,d,y) => [Math.cos(a)*(V.RX+d), y, Math.sin(a)*(V.RZ+d)];
+  const quad = (a,b,c,d) => pos.push(...a,...b,...c,...a,...c,...d);
+  const segs = Math.ceil((V.a1 - V.a0) * 48), top = V.base + (V.rows-1)*V.rise, dMax = V.rows*V.depth;
+  for (let k = 0; k < segs; k++){
+    const A = V.a0 + (V.a1-V.a0)*k/segs, B = V.a0 + (V.a1-V.a0)*(k+1)/segs;
+    quad(P(A,0,0), P(B,0,0), P(B,0,V.base), P(A,0,V.base));
+    for (let r = 0; r < V.rows; r++){
+      const d0 = r*V.depth, d1 = d0 + V.depth, y = V.base + r*V.rise;
+      quad(P(A,d0,y), P(A,d1,y), P(B,d1,y), P(B,d0,y));
+      if (r < V.rows-1) quad(P(A,d1,y), P(B,d1,y), P(B,d1,y+V.rise), P(A,d1,y+V.rise));
+    }
+    quad(P(A,dMax,top), P(B,dMax,top), P(B,dMax,top+4), P(A,dMax,top+4));
+  }
+  const bowl = new THREE.BufferGeometry();
+  bowl.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  bowl.computeVertexNormals();
+  g.add(new THREE.Mesh(bowl, new THREE.MeshLambertMaterial({color: night ? 0x2a2f3a : 0x9aa1ad, side: THREE.DoubleSide})));
+
+  // кресла одним InstancedMesh — тысячи мест без потери FPS
+  const seatGeo = mergeGeometries([
+    new THREE.BoxGeometry(.46,.1,.42).translate(0,.42,0),
+    new THREE.BoxGeometry(.46,.42,.07).translate(0,.62,-.19)]);
+  const mesh = new THREE.InstancedMesh(seatGeo, new THREE.MeshLambertMaterial({color:0xffffff}), seats.length);
+  const dummy = new THREE.Object3D();
+  seats.forEach((s, i) => {
+    dummy.position.copy(s.pos); dummy.lookAt(0, s.pos.y, 0); dummy.updateMatrix();
+    mesh.setMatrixAt(i, dummy.matrix);
+    mesh.setColorAt(i, new THREE.Color(TIERS[s.tier].c));
+  });
+  mesh.computeBoundingSphere();
+  g.add(mesh);
+
+  const floor = new THREE.Mesh(new THREE.CircleGeometry(1, 96).rotateX(-Math.PI/2).scale(V.RX, 1, V.RZ),
+    new THREE.MeshLambertMaterial({color: night ? 0x15181f : 0x2f7a3a}));
+  g.add(floor);
+
+  if (night){
+    g.add(box(8, 1.5, 18, 0x1c1f26, -17, .75, 0));                       // сцена
+    const screenTex = canvasTex(1024, 512, c => {
+      const gr = c.createLinearGradient(0,0,1024,512); gr.addColorStop(0,'#7c3aed'); gr.addColorStop(1,'#db2777');
+      c.fillStyle = gr; c.fillRect(0,0,1024,512);
+      c.fillStyle = '#fff'; c.font = 'bold 84px system-ui'; c.textAlign = 'center'; c.fillText(ev.title, 512, 280, 960);
+    });
+    const screen = new THREE.Mesh(new THREE.PlaneGeometry(16, 8), new THREE.MeshBasicMaterial({map: screenTex}));
+    screen.position.set(-20.5, 6.5, 0); screen.rotation.y = Math.PI/2; g.add(screen);
+    for (const z of [-10.5, 10.5]){
+      g.add(box(1.6, 7, 1.6, 0x0b0c10, -14.5, 3.5, z));                  // колонки — реальное препятствие обзору
+      g.add(box(.3, 10, .3, 0x555b66, -13.5, 5, z > 0 ? 11 : -11));
+    }
+    g.add(box(.4, .4, 22, 0x555b66, -13.5, 10, 0));                       // ферма
+    for (const [c, z] of [[0xff3cac, -6], [0x2bd9fe, 6]]){ const l = new THREE.PointLight(c, 300, 40); l.position.set(-14, 9, z); g.add(l); }
+  } else {
+    const pitchTex = canvasTex(1050, 680, c => {
+      for (let i = 0; i < 14; i++){ c.fillStyle = i % 2 ? '#3c8c45' : '#348040'; c.fillRect(i*75, 0, 75, 680); }
+      c.strokeStyle = '#fff'; c.lineWidth = 4;
+      c.strokeRect(5,5,1040,670);
+      c.beginPath(); c.moveTo(525,5); c.lineTo(525,675); c.stroke();
+      c.beginPath(); c.arc(525,340,91.5,0,Math.PI*2); c.stroke();
+      c.strokeRect(5,138,165,403); c.strokeRect(880,138,165,403);
+      c.strokeRect(5,248,55,184); c.strokeRect(990,248,55,184);
+    });
+    const pitch = new THREE.Mesh(new THREE.PlaneGeometry(105, 68).rotateX(-Math.PI/2), new THREE.MeshLambertMaterial({map: pitchTex}));
+    pitch.position.y = .02; g.add(pitch);
+    for (const x of [-52.5, 52.5]){
+      for (const z of [-3.66, 3.66]) g.add(box(.12, 2.44, .12, 0xffffff, x, 1.22, z));
+      g.add(box(.12, .12, 7.32, 0xffffff, x, 2.44, 0));
+    }
+    const mx = V.RX + dMax, mz = V.RZ + dMax;
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]){
+      g.add(box(1, 40, 1, 0x6b7280, sx*mx*.75, 20, sz*mz*.75));
+      g.add(box(6, 3, .6, 0xfff7d6, sx*mx*.75, 40, sz*mz*.75));
+    }
+  }
+  scene.add(g);
+  return {group: g, mesh};
+}
+
+// ---------- three.js ----------
+const canvas = $('#c'), wrap = $('#wrap');
+const renderer = new THREE.WebGLRenderer({canvas, antialias: true});
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(62, 1, .1, 1500);
+camera.rotation.order = 'YXZ';
+const controls = new OrbitControls(camera, canvas);
+controls.enableDamping = true; controls.maxPolarAngle = 1.45; controls.minDistance = 8; controls.maxDistance = 260;
+new ResizeObserver(() => {
+  const w = wrap.clientWidth, h = wrap.clientHeight; if (!w || !h) return;
+  renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
+}).observe(wrap);
+
+// ---------- состояние ----------
+let ev = null, V = null, seats = [], built = null, selected = new Set(), lastIdx = null, hoverIdx = null;
+let mode = 'overview', fly = null, yaw = 0, pitch = 0, groundY = 0, standing = false;
+const keys = new Set(), ndc = new THREE.Vector2(), ray = new THREE.Raycaster();
+let needPick = false, mouse = {x:0, y:0}, down = null;
+const soldByEvent = {};
+
+function paint(i){
+  const s = seats[i];
+  const c = i === hoverIdx && mode === 'overview' ? C_HOVER : selected.has(i) ? C_SEL : s.sold ? C_SOLD : new THREE.Color(TIERS[s.tier].c);
+  built.mesh.setColorAt(i, c); built.mesh.instanceColor.needsUpdate = true;
+}
+const seatName = s => `Сектор ${s.sec} · Ряд ${s.row} · Место ${s.num}`;
+
+function openEvent(e){
+  ev = e; V = VENUES[e.venue];
+  seats = buildSeats(V);
+  if (!soldByEvent[e.id]){ const r = rng(e.seed); soldByEvent[e.id] = new Set(seats.map((_, i) => i).filter(() => r() < .32)); }
+  seats.forEach((s, i) => { s.sold = soldByEvent[e.id].has(i); s.price = e.prices[s.tier]; });
+  if (built){ scene.remove(built.group); built.group.traverse(o => { o.geometry?.dispose(); o.material?.map?.dispose(); o.material?.dispose?.(); }); }
+  built = buildVenue(V, e, seats);
+  seats.forEach((_, i) => paint(i));
+  selected.clear(); lastIdx = hoverIdx = null; fly = null;
+  $('#home').hidden = true; $('#event').hidden = false;
+  $('#evKind').textContent = e.kind; $('#evTitle').textContent = e.title;
+  $('#evMeta').textContent = `${e.date} · ${V.name}`;
+  $('#legend').innerHTML = TIERS.map((t, i) => `<span><i style="background:#${t.c.toString(16).padStart(6,'0')}"></i>${t.name} ${fmt(e.prices[i])}</span>`).join('')
+    + '<span><i style="background:var(--sold)"></i>Продано</span><span><i style="background:var(--acc)"></i>Выбрано</span>';
+  setOverview();
+  renderPanel();
+  scrollTo(0, 0);
+}
+
+function setOverview(){
+  mode = 'overview'; controls.enabled = true;
+  camera.position.set(...V.overview.pos); controls.target.set(...V.overview.target); controls.update();
+  $('#hud').hidden = true; $('#ovHint').hidden = false;
+}
+
+function renderPanel(){
+  const s = lastIdx != null ? seats[lastIdx] : null;
+  $('#seatInfo').innerHTML = s
+    ? `<div class="mute">${TIERS[s.tier].name}</div><b>${seatName(s)}</b><div style="margin:6px 0 10px">${fmt(s.price)}</div>
+       <button class="primary" id="viewBtn" style="width:100%">Посмотреть с этого места в 3D</button>`
+    : 'Нажми на место на схеме. Двойной клик — сразу вид с места.';
+  $('#cart').innerHTML = [...selected].map(i => { const t = seats[i];
+    return `<li><span>Сектор ${t.sec}, ряд ${t.row}, место ${t.num}</span><b>${fmt(t.price)}</b><button data-i="${i}" aria-label="Убрать">×</button></li>`; }).join('')
+    || '<li class="mute">Пока пусто</li>';
+  const sum = [...selected].reduce((a, i) => a + seats[i].price, 0);
+  $('#total').textContent = fmt(sum);
+  $('#buyBtn').disabled = !selected.size;
+  if (mode === 'view' && lastIdx != null){
+    const inCart = selected.has(lastIdx);
+    $('#seatLabel').innerHTML = `<span>${seatName(s)} — <b>${fmt(s.price)}</b></span><button class="${inCart ? 'ghost' : 'primary'}" id="hudCart" style="padding:6px 12px">${inCart ? 'В корзине ✓' : 'В корзину'}</button>`;
+  }
+}
+
+function toggle(i, force){
+  const s = seats[i]; if (s.sold) return;
+  const on = force ?? !selected.has(i);
+  on ? selected.add(i) : selected.delete(i);
+  lastIdx = i; paint(i); renderPanel();
+}
+
+// ---------- камера: перелёт и режим «на месте» ----------
+const ease = k => k < .5 ? 4*k*k*k : 1 - Math.pow(-2*k + 2, 3) / 2;
+function lookPoint(){ return new THREE.Vector3(0, 0, -10).applyQuaternion(camera.quaternion).add(camera.position); }
+function flyTo(p1, l1, done){
+  fly = {t:0, dur:1.4, p0: camera.position.clone(), l0: mode === 'overview' ? controls.target.clone() : lookPoint(), p1, l1, done};
+}
+function enterSeat(i){
+  const s = seats[i]; lastIdx = i;
+  controls.enabled = false; mode = 'fly'; hoverIdx = null; paint(i);
+  $('#tip').hidden = true; $('#ovHint').hidden = true;
+  standing = false; groundY = s.pos.y;
+  flyTo(s.pos.clone().add(new THREE.Vector3(0, 1.2, 0)), new THREE.Vector3(...V.focus), () => {
+    const e = new THREE.Euler().setFromQuaternion(camera.quaternion, 'YXZ'); yaw = e.y; pitch = e.x;
+    mode = 'view'; $('#hud').hidden = false; renderPanel();
+  });
+}
+function exitSeat(){
+  mode = 'fly'; $('#hud').hidden = true;
+  flyTo(new THREE.Vector3(...V.overview.pos), new THREE.Vector3(...V.overview.target), () => {
+    controls.target.set(...V.overview.target); setOverview();
+  });
+}
+
+function walk(dt){
+  let f = 0, s = 0;
+  if (keys.has('f')) f++; if (keys.has('b')) f--; if (keys.has('r')) s++; if (keys.has('l')) s--;
+  if (f || s){
+    standing = true;
+    const sp = (keys.has('shift') ? 9 : 3.2) * dt / Math.hypot(f, s);
+    const nx = camera.position.x + (-Math.sin(yaw)*f + Math.cos(yaw)*s) * sp;
+    const nz = camera.position.z + (-Math.cos(yaw)*f - Math.sin(yaw)*s) * sp;
+    const g = ground(V, nx, nz);
+    if (g !== null && g - groundY < 1.7){ camera.position.x = nx; camera.position.z = nz; groundY = g; }
+  }
+  const ty = groundY + (standing ? 1.65 : 1.2);
+  camera.position.y += (ty - camera.position.y) * Math.min(1, dt * 10);
+  camera.rotation.set(pitch, yaw, 0);
+}
+
+function pick(){
+  ray.setFromCamera(ndc, camera);
+  const h = ray.intersectObject(built.mesh)[0];
+  return h ? h.instanceId : null;
+}
+
+let last = performance.now();
+function loop(t){
+  requestAnimationFrame(loop);
+  const dt = Math.min((t - last) / 1000, .05); last = t;
+  if (!ev || $('#event').hidden) return;
+  if (fly){
+    fly.t += dt / fly.dur; const k = ease(Math.min(1, fly.t));
+    camera.position.lerpVectors(fly.p0, fly.p1, k);
+    camera.lookAt(new THREE.Vector3().lerpVectors(fly.l0, fly.l1, k));
+    if (fly.t >= 1){ const f = fly; fly = null; f.done?.(); }
+  } else if (mode === 'overview'){
+    controls.update();
+    if (needPick){
+      needPick = false;
+      const i = pick();
+      if (i !== hoverIdx){ const old = hoverIdx; hoverIdx = i; if (old != null) paint(old); if (i != null) paint(i); }
+      const tip = $('#tip');
+      if (i != null){
+        const s = seats[i];
+        tip.innerHTML = `${seatName(s)} — ${s.sold ? 'продано' : `<b>${fmt(s.price)}</b>`}`;
+        tip.style.left = mouse.x + 'px'; tip.style.top = mouse.y + 'px'; tip.hidden = false;
+        canvas.style.cursor = s.sold ? 'not-allowed' : 'pointer';
+      } else { tip.hidden = true; canvas.style.cursor = ''; }
+    }
+  } else if (mode === 'view') walk(dt);
+  renderer.render(scene, camera);
+}
+requestAnimationFrame(loop);
+
+// ---------- ввод ----------
+canvas.addEventListener('pointermove', e => {
+  const r = canvas.getBoundingClientRect();
+  mouse = {x: e.clientX - r.left, y: e.clientY - r.top};
+  ndc.set(mouse.x / r.width * 2 - 1, -(mouse.y / r.height) * 2 + 1);
+  if (mode === 'overview' && e.pointerType === 'mouse') needPick = true;
+  if (mode === 'view' && down){
+    yaw -= (e.clientX - down.x) * .0035; pitch -= (e.clientY - down.y) * .0035;
+    pitch = Math.max(-1.3, Math.min(1.3, pitch)); down = {x: e.clientX, y: e.clientY, moved: true};
+  }
+});
+canvas.addEventListener('pointerdown', e => { down = {x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY}; });
+canvas.addEventListener('pointerup', e => {
+  const d = down; down = null;
+  if (mode !== 'overview' || !d || Math.hypot(e.clientX - d.sx, e.clientY - d.sy) > 6) return;
+  const r = canvas.getBoundingClientRect();
+  ndc.set((e.clientX - r.left) / r.width * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+  const i = pick(); if (i != null) toggle(i);
+});
+canvas.addEventListener('dblclick', () => { if (mode !== 'overview') return; const i = pick(); if (i != null && !seats[i].sold){ toggle(i, true); enterSeat(i); } });
+canvas.addEventListener('pointerleave', () => { down = null; });
+
+const KEYMAP = {KeyW:'f', ArrowUp:'f', KeyS:'b', ArrowDown:'b', KeyA:'l', ArrowLeft:'l', KeyD:'r', ArrowRight:'r', ShiftLeft:'shift', ShiftRight:'shift'};
+addEventListener('keydown', e => {
+  if ($('#dlg').open) return;
+  if (e.code === 'Escape' && mode === 'view') return exitSeat();
+  if (mode === 'view' && KEYMAP[e.code]){ keys.add(KEYMAP[e.code]); e.preventDefault(); }
+});
+addEventListener('keyup', e => KEYMAP[e.code] && keys.delete(KEYMAP[e.code]));
+addEventListener('blur', () => keys.clear());
+document.querySelectorAll('.pad button').forEach(b => {
+  b.addEventListener('pointerdown', () => keys.add(b.dataset.k));
+  for (const t of ['pointerup', 'pointerleave', 'pointercancel']) b.addEventListener(t, () => keys.delete(b.dataset.k));
+});
+
+$('#exitView').onclick = exitSeat;
+$('#resetSeat').onclick = () => { if (mode === 'view' && lastIdx != null){ mode = 'fly'; enterSeat(lastIdx); } };
+document.addEventListener('click', e => {
+  if (e.target.id === 'viewBtn') enterSeat(lastIdx);
+  if (e.target.id === 'hudCart') toggle(lastIdx);
+  if (e.target.matches('#cart button')){ const i = +e.target.dataset.i; selected.delete(i); paint(i); renderPanel(); }
+});
+
+// ---------- главная ----------
+$('#events').innerHTML = EVENTS.map(e => `
+  <button class="ev" data-id="${e.id}">
+    <div class="cover" style="background:${e.cover}">${e.kind}</div>
+    <div class="body"><h3>${e.title}</h3><div class="mute">${e.date}</div><div class="mute">${VENUES[e.venue].name}</div>
+    <div class="from">от ${fmt(Math.min(...e.prices))}</div></div>
+  </button>`).join('');
+$('#events').onclick = e => { const b = e.target.closest('.ev'); if (b) openEvent(EVENTS.find(x => x.id == b.dataset.id)); };
+const goHome = () => { if (mode === 'view' || fly){ fly = null; } $('#event').hidden = true; $('#home').hidden = false; keys.clear(); };
+$('#backHome').onclick = goHome; $('#logo').onclick = goHome;
+
+// ---------- оформление (демо, без настоящей оплаты) ----------
+const dlg = $('#dlg');
+$('#buyBtn').onclick = () => {
+  const sum = [...selected].reduce((a, i) => a + seats[i].price, 0);
+  dlg.innerHTML = `<form id="payForm">
+    <h2>Оформление</h2><div class="mute">${ev.title} · ${selected.size} бил. · ${fmt(sum)}</div>
+    <label>Имя<input name="name" required autocomplete="name"></label>
+    <label>E-mail для билетов<input name="email" type="email" required autocomplete="email"></label>
+    <label>Телефон<input name="phone" type="tel" autocomplete="tel"></label>
+    <div class="row"><button type="button" class="ghost" id="cancelPay">Отмена</button><button class="primary">Оплатить ${fmt(sum)}</button></div>
+    <p class="mute" style="font-size:12px;margin:12px 0 0">Демо: деньги не списываются.</p></form>`;
+  dlg.showModal();
+};
+dlg.addEventListener('click', e => { if (e.target.id === 'cancelPay' || e.target.id === 'closeDlg') dlg.close(); });
+dlg.addEventListener('submit', e => {
+  e.preventDefault();
+  const code = () => Math.random().toString(36).slice(2, 6).toUpperCase() + '-' + Math.random().toString(36).slice(2, 6).toUpperCase();
+  const bought = [...selected];
+  dlg.innerHTML = `<h2>Готово!</h2><div class="mute">Билеты отправлены на ${new FormData(e.target).get('email').replace(/[<>&"]/g, '')}</div>
+    ${bought.map(i => `<div class="ticket">${seatName(seats[i])}<br><code>${code()}</code></div>`).join('')}
+    <div class="row"><button class="primary" id="closeDlg">Отлично</button></div>`;
+  bought.forEach(i => { seats[i].sold = true; soldByEvent[ev.id].add(i); selected.delete(i); paint(i); });
+  renderPanel();
+});
+</script>
+</body>

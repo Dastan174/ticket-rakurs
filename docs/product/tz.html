@@ -1,0 +1,393 @@
+<title>ТЗ Ракурс</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@500;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: одна колонка документа ~760px + липкое оглавление слева на широких экранах */
+:root{
+  --bg:#f6f7f5; --surface:#ffffff; --fg:#17201b; --mute:#5c6862; --line:#dde3df;
+  --accent:#0f8a4f; --accent-soft:#e3f3ea; --warn:#a35a00; --warn-soft:#fbefdd; --bad:#b42318; --bad-soft:#fde8e6;
+  --f-display:"Onest",system-ui,sans-serif; --f-body:"Inter",system-ui,sans-serif; --f-mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f1412; --surface:#161d1a; --fg:#e6ece8; --mute:#93a199; --line:#26302b;
+  --accent:#3ccf86; --accent-soft:#12291e; --warn:#f0a945; --warn-soft:#2b2214; --bad:#f2786d; --bad-soft:#2d1715; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1412; --surface:#161d1a; --fg:#e6ece8; --mute:#93a199; --line:#26302b;
+  --accent:#3ccf86; --accent-soft:#12291e; --warn:#f0a945; --warn-soft:#2b2214; --bad:#f2786d; --bad-soft:#2d1715; color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font:15.5px/1.65 var(--f-body);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.page{max-width:1120px;margin:0 auto;display:grid;grid-template-columns:220px minmax(0,1fr);gap:48px;padding-block:48px 96px}
+nav.toc{position:sticky;top:calc(env(safe-area-inset-top,0px) + 24px);align-self:start;font-size:13.5px}
+nav.toc b{display:block;font:600 11px/1 var(--f-body);letter-spacing:.08em;text-transform:uppercase;color:var(--mute);margin-bottom:12px}
+nav.toc a{display:block;color:var(--mute);text-decoration:none;padding:4px 0;border-left:2px solid transparent;padding-left:10px;margin-left:-12px}
+nav.toc a:hover{color:var(--fg);border-left-color:var(--accent)}
+main{min-width:0;max-width:780px}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;line-height:1.2}
+h1{font-size:clamp(30px,5vw,44px);font-weight:800;margin:6px 0 12px;letter-spacing:-.01em}
+h2{font-size:24px;font-weight:700;margin:56px 0 14px;padding-top:12px;border-top:1px solid var(--line)}
+h3{font-size:17px;font-weight:700;margin:28px 0 8px}
+p,li{max-width:68ch}
+a{color:var(--accent)}
+.eyebrow{font:600 12px/1 var(--f-body);letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+.lead{font-size:18px;color:var(--mute);margin:0 0 20px}
+.meta{display:flex;flex-wrap:wrap;gap:8px 20px;font-size:13.5px;color:var(--mute)}
+.meta span b{color:var(--fg);font-weight:600}
+code,.mono{font-family:var(--f-mono);font-size:.88em}
+code{background:var(--accent-soft);padding:1px 5px;border-radius:4px}
+pre{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px 16px;overflow-x:auto;font:13px/1.55 var(--f-mono)}
+pre code{background:none;padding:0}
+.tbl{overflow-x:auto;margin:14px 0;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:14px;min-width:560px}
+th,td{text-align:left;vertical-align:top;padding:10px 12px;border-bottom:1px solid var(--line)}
+th{font-weight:600;font-size:12.5px;color:var(--mute);background:var(--bg)}
+tr:last-child td{border-bottom:0}
+td:first-child{font-weight:600;white-space:nowrap}
+.tag{display:inline-block;font:600 11px/1 var(--f-body);padding:4px 7px;border-radius:999px;letter-spacing:.03em;vertical-align:1px}
+.mvp{background:var(--accent-soft);color:var(--accent)}
+.v2{background:var(--warn-soft);color:var(--warn)}
+.note{border-left:3px solid var(--accent);background:var(--accent-soft);padding:12px 16px;border-radius:0 8px 8px 0;margin:16px 0}
+.risk{border-left:3px solid var(--warn);background:var(--warn-soft);padding:12px 16px;border-radius:0 8px 8px 0;margin:16px 0}
+.finding{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;margin:8px 0}
+.sev{font:600 11px/1 var(--f-body);padding:4px 7px;border-radius:4px;height:fit-content;margin-top:3px}
+.sev.hi{background:var(--bad-soft);color:var(--bad)}
+.sev.md{background:var(--warn-soft);color:var(--warn)}
+.sev.ok{background:var(--accent-soft);color:var(--accent)}
+.phase{display:grid;grid-template-columns:110px 1fr;gap:16px;padding:16px 0;border-bottom:1px solid var(--line)}
+.phase:last-of-type{border-bottom:0}
+.phase .when{font:500 13px/1.4 var(--f-mono);color:var(--mute)}
+.phase .when b{display:block;font:700 15px/1.3 var(--f-display);color:var(--fg)}
+.phase ul{margin:6px 0 0;padding-left:18px}
+ul{padding-left:20px}
+li{margin:3px 0}
+.num{font-variant-numeric:tabular-nums}
+@media (max-width:860px){.page{grid-template-columns:1fr;gap:0;padding-block:28px 64px}nav.toc{display:none}.phase{grid-template-columns:1fr;gap:4px}}
+</style>
+
+<div class="page">
+<nav class="toc" aria-label="Оглавление">
+  <b>Содержание</b>
+  <a href="#idea">1. Продукт</a>
+  <a href="#rivals">2. Конкуренты</a>
+  <a href="#roles">3. Роли</a>
+  <a href="#func">4. Функции</a>
+  <a href="#view3d">5. 3D-модуль</a>
+  <a href="#load">6. Старт продаж и нагрузка</a>
+  <a href="#nfr">7. Нефункциональные</a>
+  <a href="#stack">8. Стек</a>
+  <a href="#cost">8а. Стоимость</a>
+  <a href="#data">9. Модель данных</a>
+  <a href="#plan">10. План работ</a>
+  <a href="#risks">11. Риски</a>
+  <a href="#accept">12. Приёмка MVP</a>
+</nav>
+
+<main>
+<div class="eyebrow">Техническое задание · черновик 2</div>
+<h1>Ракурс — билетный сервис с видом с места</h1>
+<p class="lead">Продажа билетов на концерты, спорт и театр, где перед покупкой можно сесть на выбранное место в 3D, осмотреться и пройтись по залу.</p>
+<div class="meta">
+  <span><b>Дата:</b> 23.11.2026</span>
+  <span><b>Рынок:</b> только Бишкек, валюта KGS</span>
+  <span><b>Команда:</b> 2 разработчика</span>
+  <span><b>Оплата:</b> подключается отдельно, вне этого ТЗ</span>
+  <span><b>Прототип:</b> есть (Three.js, одна страница)</span>
+</div>
+
+<h2 id="idea">1. Продукт и чем он отличается</h2>
+<p>Оба местных оператора показывают плоскую схему секторов. Покупатель видит цену и номер места, но не видит, что ему будет видно. Главная ценность Ракурса закрывает этот вопрос: <b>вид с конкретного кресла в 3D со свободным движением</b>, а не набор фотографий с переходами.</p>
+<ul>
+  <li>Выбор места на 3D-схеме зала, при наведении видны сектор, ряд, место и цена.</li>
+  <li>Режим «сесть на место»: камера на высоте глаз сидящего, осмотр мышью или пальцем, ходьба по проходам и ступеням.</li>
+  <li>Видно реальные препятствия: колонны, звуковые порталы, ферму, пульт звукорежиссёра, ограждения.</li>
+  <li>Путь от входа до места <span class="tag v2">v2</span>: анимация маршрута от выбранных ворот.</li>
+</ul>
+<p><b>Категории:</b> концерты, театр, спорт, юмор, детям. <b>Вне объёма:</b> кино, туризм, другие города кроме Бишкека.</p>
+<div class="note">Зал строится из параметров (контур, сектора, ряды, шаг кресел, высота ступени) и списка мест. Одни и те же данные рисуют 2D-схему, 3D-сцену и хранят статусы мест. Вручную моделировать каждую площадку не нужно.</div>
+
+<h2 id="rivals">2. Конкуренты: ticket.kg и kassir.kg</h2>
+<p>Проверено 23.11.2026 в браузере на ширине телефона, на одном и том же событии (концерт в «Жаштык арене»), которое продают оба сервиса.</p>
+
+<div class="tbl"><table>
+<thead><tr><th></th><th>ticket.kg</th><th>kassir.kg</th></tr></thead>
+<tbody>
+<tr><td>Технологии</td><td>Nuxt (Vue), свой API <code>/api/events/…</code></td><td>Next.js (React, Turbopack)</td></tr>
+<tr><td>Схема зала</td><td>Плоская, секторная, цветом по цене</td><td>Та же схема, кнопки зума и сброса</td></tr>
+<tr><td>Вид с места</td><td>Нет</td><td>Нет</td></tr>
+<tr><td>Вес страницы</td><td class="num">213 запросов на странице выбора мест</td><td class="num">91 запрос, ≈1,8 МБ на главной</td></tr>
+<tr><td>Трекеры</td><td>Facebook Pixel, Google Ads, GA4, GTM, Яндекс Метрика ×2, Яндекс Реклама</td><td>Facebook Pixel ×2, Яндекс Метрика ×2</td></tr>
+<tr><td>Ассортимент</td><td>Концерты, театр, кино (сеансы), туризм, семинары</td><td>Концерты, театр, спорт, музеи, туризм, город Ош</td></tr>
+<tr><td>Сильное</td><td>Календарь по датам, «осталось N билетов», кино</td><td>Корзина, тёмная тема, город, правила возврата на странице</td></tr>
+</tbody></table></div>
+
+<h3>Что у них плохо</h3>
+<div class="finding"><span class="sev hi">Важно</span><div><b>Никто не показывает обзор.</b> Покупатель не знает, закроет ли сцену портал или ферма и как далеко будет сцена. Это наша главная ниша.</div></div>
+<div class="finding"><span class="sev hi">Важно</span><div><b>Одно событие продают оба оператора</b>, значит организатор делит квоты мест между ними. Нам нужен кабинет организатора с квотами и API для синхронизации, иначе возможна двойная продажа.</div></div>
+<div class="finding"><span class="sev md">Средне</span><div><b>ticket.kg:</b> схема шире экрана телефона, правые сектора обрезаны и уходят за край.</div></div>
+<div class="finding"><span class="sev md">Средне</span><div><b>kassir.kg:</b> плавающая кнопка WhatsApp закрывает часть схемы мест.</div></div>
+<div class="finding"><span class="sev md">Средне</span><div><b>kassir.kg:</b> правила возврата противоречат друг другу: в карточке «за 3 суток возврат невозможен», в описании «возврату не подлежат».</div></div>
+<div class="finding"><span class="sev md">Средне</span><div><b>kassir.kg:</b> в фильтре цен две одинаковые кнопки «12 000», названия на карточках обрезаны до бессмыслицы («Рок-Опера "ЮНОН…»).</div></div>
+<div class="finding"><span class="sev md">Средне</span><div><b>Оба:</b> тяжёлые страницы и много рекламных трекеров. На мобильном 4G это медленный старт, а при старте продаж — лишняя нагрузка.</div></div>
+<div class="finding"><span class="sev ok">Учесть</span><div>Поведение их сайтов при пиковых продажах и отзывы покупателей не проверялись. Перед запуском стоит собрать жалобы из соцсетей и магазинов приложений.</div></div>
+
+<h2 id="roles">3. Роли</h2>
+<div class="tbl"><table>
+<thead><tr><th>Роль</th><th>Что делает</th></tr></thead>
+<tbody>
+<tr><td>Покупатель</td><td>Ищет событие, выбирает места в 2D/3D, смотрит вид с места, покупает, получает QR-билет, видит свои билеты, оформляет возврат по правилам события.</td></tr>
+<tr><td>Организатор</td><td>Создаёт событие на площадке, задаёт ценовые зоны, квоты и правила возврата, закрывает места, видит продажи и выгружает отчёты.</td></tr>
+<tr><td>Контролёр</td><td>Сканирует QR на входе с телефона, в том числе без интернета.</td></tr>
+<tr><td>Администратор</td><td>Создаёт площадки и залы в редакторе, модерирует события, управляет пользователями, возвратами и стартом продаж.</td></tr>
+</tbody></table></div>
+
+<h2 id="func">4. Функциональные требования</h2>
+<h3>Покупатель</h3>
+<ul>
+  <li><span class="tag mvp">MVP</span> Каталог: категории, поиск, фильтр по дате, категории, площадке и цене, карточки с ценой «от».</li>
+  <li><span class="tag mvp">MVP</span> Страница события: описание, дата, площадка, карта (ссылка на 2ГИС), правила возврата <b>одним источником</b>, без противоречий.</li>
+  <li><span class="tag mvp">MVP</span> Выбор мест: 3D-схема, 2D-схема как запасной вариант и для слабых устройств, танцпол или зона без мест как счётчик количества.</li>
+  <li><span class="tag mvp">MVP</span> Вид с места, ходьба, кнопка «в корзину» прямо из 3D.</li>
+  <li><span class="tag mvp">MVP</span> Бронь на 10 минут с видимым таймером, корзина, оформление (имя, телефон, e-mail).</li>
+  <li><span class="tag mvp">MVP</span> Электронный билет: QR, PDF на почту, раздел «Мои билеты». Вход без пароля: через Telegram или код на e-mail (оба бесплатны, SMS не нужны).</li>
+  <li><span class="tag mvp">MVP</span> Языки: русский и кыргызский.</li>
+  <li><span class="tag v2">v2</span> Возврат онлайн по правилам события, передача билета другому человеку, путь от входа до места, «лучшее место за мою цену».</li>
+</ul>
+<h3>Организатор</h3>
+<ul>
+  <li><span class="tag mvp">MVP</span> Создание события на существующей площадке, ценовые зоны (раскраска секторов и рядов), закрытие мест (технические, пригласительные).</li>
+  <li><span class="tag mvp">MVP</span> Отчёт продаж в реальном времени, выгрузка в Excel.</li>
+  <li><span class="tag v2">v2</span> Квоты для других операторов и API синхронизации статусов, промокоды, отложенный старт продаж с очередью.</li>
+</ul>
+<h3>Контролёр</h3>
+<ul>
+  <li><span class="tag mvp">MVP</span> Веб-приложение (PWA) для сканирования. Список билетов события скачивается заранее, проверка подписи QR работает офлайн, повторный вход помечается и синхронизируется при появлении сети.</li>
+</ul>
+<h3>Администратор</h3>
+<ul>
+  <li><span class="tag mvp">MVP</span> Редактор зала: параметры чаши (контур, сектора, ряды, шаг, подъём), сцена, препятствия, предпросмотр в 3D, нумерация мест.</li>
+  <li><span class="tag mvp">MVP</span> Модерация событий, ручная бронь и снятие брони, журнал действий.</li>
+</ul>
+
+<h2 id="view3d">5. 3D-модуль</h2>
+<ul>
+  <li><b>Источник данных:</b> JSON площадки (параметры и препятствия) и массив мест с координатами. 2D и 3D строятся из одного файла.</li>
+  <li><b>Отрисовка:</b> Three.js. Кресла рисуются одним <code>InstancedMesh</code>, 10–50 тысяч мест без потери FPS. Статусы мест — цвет инстанса, сцену не пересобираем.</li>
+  <li><b>Вес:</b> сцена площадки не больше 3 МБ (сжатие gzip или brotli, текстуры KTX2). 3D грузится лениво, только после открытия выбора мест.</li>
+  <li><b>Телефоны:</b> управление касанием (свайп для осмотра, джойстик для ходьбы), ограничение pixel ratio, упрощённая сцена при FPS ниже 30.</li>
+  <li><b>Запасной вариант:</b> нет WebGL или слабое устройство — 2D-схема и статичный кадр вида из сектора, отрендеренный заранее.</li>
+  <li><b>Точность:</b> на каждой площадке размечены препятствия. Места с ограниченным обзором автоматически отмечаются (луч от глаз до центра сцены) и продаются со скидкой или с пометкой.</li>
+  <li><span class="tag v2">v2</span> Фотореалистичные залы через Gaussian Splatting (съёмка площадки с дрона или телефона), сверху накладываются кресла из наших данных.</li>
+</ul>
+
+<h2 id="load">6. Старт продаж и нагрузка</h2>
+<p>Главная техническая проблема билетных сервисов — первые минуты продаж популярного концерта. Например, 30 000 человек приходят в 12:00 на 8 000 мест. Нужны четыре вещи: не упасть, не продать одно место дважды, не отдать билеты ботам и честно обслужить очередь.</p>
+
+<h3>6.1 Виртуальная очередь</h3>
+<ul>
+  <li>Для событий с флагом «горячее» перед выбором мест стоит комната ожидания. Это статичная страница с CDN, она почти не нагружает сервер.</li>
+  <li>Каждому заходящему выдаётся номер в Upstash Redis (<code>ZADD queue:{event} ts user</code>). Можно обойтись и таблицей в Postgres, но Redis дешевле держит тысячи опросов «моя очередь?». Сервер пропускает к выбору мест N человек в секунду и выдаёт им подписанный пропуск на 15 минут.</li>
+  <li>N задаётся так, чтобы на выборе мест одновременно было не больше примерно 1,5 × свободных мест. Человек видит свой номер и примерное время ожидания.</li>
+</ul>
+
+<h3>6.2 Бронь места без двойной продажи</h3>
+<p>Источник истины — PostgreSQL в Supabase. Бронь — функция в базе (<code>rpc('hold_seats')</code>), атомарная: или берём все выбранные места, или ни одного. Клиент напрямую в таблицу мест не пишет, права закрыты через RLS.</p>
+<pre><code>UPDATE event_seats
+SET status = 'held', order_id = $1, hold_until = now() + interval '10 min'
+WHERE event_id = $2 AND seat_id = ANY($3) AND status = 'free';
+-- если обновлено меньше строк, чем мест в запросе → ROLLBACK, отвечаем «место уже заняли»</code></pre>
+<ul>
+  <li>Одна транзакция на заказ, блокировка только нужных строк. Postgres держит тысячи таких операций в секунду, отдельная «распределённая блокировка» не нужна.</li>
+  <li>Просроченные брони освобождает задача <code>pg_cron</code> раз в 15 секунд. При чтении <code>hold_until &lt; now()</code> считается свободным.</li>
+  <li>Подтверждение оплаты идемпотентно (ключ — <code>order_id</code>). Если оплата пришла после истечения брони, а место уже занято другим, автоматически возвращаем деньги и уведомляем покупателя.</li>
+  <li>Лимит: не больше 6 билетов на событие на один телефон или аккаунт.</li>
+</ul>
+
+<h3>6.3 Статусы мест в реальном времени</h3>
+<ul>
+  <li>Схема и 3D-сцена лежат в Cloudflare R2 и кешируются на CDN. У R2 трафик бесплатный, поэтому 30 000 загрузок сцены по 3 МБ ничего не стоят. В Supabase Storage тот же трафик был бы платным сверх 250 ГБ.</li>
+  <li>Статусы отдаются отдельно: снимок (битовая маска, примерно 1 КБ на 8 000 мест), затем только изменения через Supabase Realtime (Broadcast).</li>
+  <li>Обновления пакуются раз в 300–500 мс, чтобы не заваливать клиентов сообщениями.</li>
+</ul>
+
+<h3>6.4 Боты и перекупщики</h3>
+<ul>
+  <li>Вход в очередь и в оформление — только для вошедших (Telegram или e-mail). Капча Cloudflare Turnstile на входе в очередь (бесплатна). SMS-подтверждение — опция только для самых горячих событий, если боты всё же пойдут.</li>
+  <li>Ограничение частоты запросов по IP, устройству и аккаунту (Upstash Redis). Повторная продажа билета только через официальную передачу <span class="tag v2">v2</span>.</li>
+  <li>QR подписан ключом сервера (Ed25519). Подделку видно офлайн, а копию билета ловит отметка «уже прошёл».</li>
+</ul>
+
+<h3>6.5 Как выдерживаем пик</h3>
+<ul>
+  <li>Тяжёлое делается в фоне: PDF и письма через очередь <code>pgmq</code> и Supabase Edge Functions. Ответ «бронь успешна» не ждёт их.</li>
+  <li>Сайт на Cloudflare Workers масштабируется сам. Перед стартом горячих продаж поднимаем мощность базы Supabase на несколько часов (оплата почасовая), потом возвращаем обратно.</li>
+  <li>Режим деградации: при перегрузке отключаем 3D-ходьбу и оставляем 2D и вид с места; отчёты замораживаются на время старта.</li>
+  <li><b>Нагрузочный тест обязателен до запуска:</b> k6, сценарий 30 000 пользователей за 2 минуты на 8 000 мест. Цели: p95 брони меньше 300 мс, ноль двойных продаж, ни одного 5xx у пользователей в очереди.</li>
+</ul>
+
+<pre class="mermaid">
+sequenceDiagram
+  participant U as Покупатель
+  participant Q as Очередь (Redis)
+  participant A as Сайт (Next.js)
+  participant DB as Supabase Postgres
+  participant P as Платёжка
+  U->>Q: вход в комнату ожидания
+  Q-->>U: номер в очереди
+  Q-->>U: пропуск (подписанный, 15 мин)
+  U->>A: бронь мест + пропуск
+  A->>DB: rpc hold_seats (UPDATE … WHERE status='free')
+  DB-->>A: все места взяты
+  A-->>U: бронь на 10 минут
+  U->>P: оплата
+  P->>A: webhook (идемпотентно)
+  A->>DB: held → sold, выпуск билетов
+  A-->>U: QR-билет (письмо в фоне)
+</pre>
+
+<h2 id="nfr">7. Нефункциональные требования</h2>
+<div class="tbl"><table>
+<thead><tr><th>Требование</th><th>Значение</th></tr></thead>
+<tbody>
+<tr><td>Скорость</td><td>LCP главной и страницы события меньше 2,5 с на мобильном 4G; JS первой загрузки меньше 200 КБ без 3D.</td></tr>
+<tr><td>Пик</td><td>30 000 одновременно в очереди, 2 000 броней в минуту, ноль двойных продаж.</td></tr>
+<tr><td>SEO</td><td>Страницы событий рендерятся на сервере, есть микроразметка Event и Open Graph для соцсетей.</td></tr>
+<tr><td>Доступность</td><td>Выбор мест возможен без 3D: список «сектор → ряд → место» с клавиатуры.</td></tr>
+<tr><td>Безопасность</td><td>HTTPS, роли и права на сервере, журнал действий администраторов, ежедневные бэкапы БД с проверкой восстановления.</td></tr>
+<tr><td>Персональные данные</td><td>Храним минимум (имя, телефон, e-mail), согласие на обработку, серверы и порядок хранения по закону КР о персональных данных.</td></tr>
+<tr><td>Аналитика</td><td>Одна система аналитики, рекламные пиксели подключаются только после согласия и не грузятся в оформлении заказа.</td></tr>
+<tr><td>Мониторинг</td><td>Ошибки — Sentry (бесплатный план), метрики базы — панель Supabase, доступность — UptimeRobot (бесплатно), алерт в Telegram при росте ошибок брони.</td></tr>
+</tbody></table></div>
+
+<h2 id="stack">8. Рекомендуемый стек</h2>
+<p>Для двух человек главное — не держать свой бэкенд-сервер. Supabase закрывает базу, вход, реальное время и фоновые задачи, Cloudflare — хостинг, файлы и CDN. Пишем на одном языке, TypeScript, плюс SQL-функции в базе.</p>
+<div class="tbl"><table>
+<thead><tr><th>Часть</th><th>Выбор</th><th>Почему</th></tr></thead>
+<tbody>
+<tr><td>Сайт</td><td>Next.js + TypeScript + Tailwind + shadcn/ui</td><td>Серверный рендер для SEO. Готовые компоненты интерфейса заменяют отдельного дизайнера.</td></tr>
+<tr><td>Хостинг сайта</td><td>Cloudflare Workers (адаптер OpenNext)</td><td>Дешевле Vercel для коммерции и сразу стоит на CDN.</td></tr>
+<tr><td>3D</td><td>Three.js через react-three-fiber + drei</td><td>Прототип уже на Three.js; InstancedMesh держит тысячи мест.</td></tr>
+<tr><td>2D-схема</td><td>SVG (до ~5 000 мест) или Canvas</td><td>Запасной вариант и доступность.</td></tr>
+<tr><td>База и бэкенд</td><td>Supabase: Postgres, RLS, SQL-функции</td><td>Бронь, заказы и права живут в базе. Отдельный NestJS-сервер не нужен.</td></tr>
+<tr><td>Вход</td><td>Supabase Auth: e-mail-код + вход через Telegram</td><td>Без паролей и без платных SMS.</td></tr>
+<tr><td>Реальное время</td><td>Supabase Realtime (Broadcast)</td><td>Изменения статусов мест на схеме.</td></tr>
+<tr><td>Фоновые задачи</td><td>pg_cron + pgmq + Supabase Edge Functions</td><td>Снятие просроченных броней, PDF, письма, webhook оплаты.</td></tr>
+<tr><td>Очередь и лимиты</td><td>Upstash Redis (оплата за запросы)</td><td>Виртуальная очередь на старте продаж. В обычные дни почти ничего не стоит.</td></tr>
+<tr><td>Файлы</td><td>Cloudflare R2</td><td>3D-сцены, афиши, PDF. Трафик бесплатный.</td></tr>
+<tr><td>Письма</td><td>Amazon SES или Brevo</td><td>Самые дешёвые варианты для билетов и кодов входа.</td></tr>
+<tr><td>Сканер</td><td>PWA на том же Next.js</td><td>Без публикации в магазинах, офлайн-кеш.</td></tr>
+<tr><td>Тесты</td><td>Vitest, Playwright, k6</td><td>Юнит, сквозные сценарии покупки, нагрузка старта продаж.</td></tr>
+</tbody></table></div>
+<p>Если Supabase не подойдёт, тот же код переносится на свой сервер: Supabase — это обычный Postgres, его можно поднять самостоятельно.</p>
+
+<h2 id="cost">8а. Сколько это стоит в месяц</h2>
+<p>Цены Supabase и Cloudflare R2 взяты с их официальных страниц 23.11.2026. Остальное — примерная оценка, перед оплатой сверить. Курс для пересчёта ≈87 сом за $1. Не включены: зарплаты, комиссия эквайринга (оплата подключается отдельно), SMS.</p>
+
+<h3>Вариант А: почти бесплатно — на время разработки</h3>
+<div class="tbl"><table>
+<thead><tr><th>Сервис</th><th>План</th><th>В месяц</th></tr></thead>
+<tbody>
+<tr><td>Supabase</td><td>Free: 500 МБ база, 200 подключений Realtime</td><td class="num">$0</td></tr>
+<tr><td>Cloudflare Workers + R2</td><td>Бесплатные лимиты, R2 до 10 ГБ</td><td class="num">$0</td></tr>
+<tr><td>Upstash, Sentry, Brevo</td><td>Бесплатные планы</td><td class="num">$0</td></tr>
+<tr><td>Итого</td><td></td><td class="num"><b>$0</b></td></tr>
+</tbody></table></div>
+<div class="risk">Для продаж не годится: бесплатный проект Supabase засыпает после недели без активности, и у него нет автоматических бэкапов. Только для разработки и демо организаторам.</div>
+
+<h3>Вариант Б: рекомендуемый для запуска</h3>
+<div class="tbl"><table>
+<thead><tr><th>Сервис</th><th>План</th><th>В месяц</th></tr></thead>
+<tbody>
+<tr><td>Supabase</td><td>Pro: база Micro включена ($10 кредита), 8 ГБ диск, 250 ГБ трафика, бэкапы 7 дней, 500 подключений Realtime, 5 млн сообщений</td><td class="num">$25</td></tr>
+<tr><td>Cloudflare Workers</td><td>Платный план, нужен для Next.js без лимитов</td><td class="num">≈$5</td></tr>
+<tr><td>Cloudflare R2</td><td>До 10 ГБ и 10 млн чтений бесплатно, трафик бесплатный</td><td class="num">$0–1</td></tr>
+<tr><td>Upstash Redis</td><td>Оплата за запросы</td><td class="num">≈$0–10</td></tr>
+<tr><td>Письма</td><td>Amazon SES (≈$0,10 за 1 000 писем) или Brevo бесплатно до 300 в день</td><td class="num">≈$0–5</td></tr>
+<tr><td>Sentry, UptimeRobot, Turnstile</td><td>Бесплатные планы</td><td class="num">$0</td></tr>
+<tr><td>Итого</td><td></td><td class="num"><b>≈$30–45 (≈2 600–3 900 сом)</b></td></tr>
+</tbody></table></div>
+
+<h3>Месяц с горячим концертом (8 000 мест, ~3 000 человек на схеме одновременно)</h3>
+<div class="tbl"><table>
+<thead><tr><th>Что</th><th>Расчёт</th><th>Доплата</th></tr></thead>
+<tbody>
+<tr><td>Мощность базы</td><td>Large ($110/мес) на 1 день, почасовая оплата</td><td class="num">≈$4–5</td></tr>
+<tr><td>Подключения Realtime</td><td>3 000 пик − 500 включено = 2 500 сверх, $10 за 1 000</td><td class="num">≈$25–30</td></tr>
+<tr><td>Сообщения Realtime</td><td>3 000 × 2 обновления/с × 10 мин ≈ 3,6 млн, укладывается в 5 млн</td><td class="num">$0</td></tr>
+<tr><td>3D-сцены</td><td>30 000 × 3 МБ ≈ 90 ГБ с R2, трафик бесплатный</td><td class="num">$0</td></tr>
+<tr><td>Итого сверху</td><td></td><td class="num"><b>≈$30–40</b></td></tr>
+</tbody></table></div>
+
+<h3>Вариант В: свой сервер — самый дешёвый, но больше работы</h3>
+<div class="tbl"><table>
+<thead><tr><th>Сервис</th><th>План</th><th>В месяц</th></tr></thead>
+<tbody>
+<tr><td>VPS (Hetzner или аналог)</td><td>4 vCPU, 8 ГБ: Postgres, Redis, сайт в Docker через Coolify</td><td class="num">≈$10–20</td></tr>
+<tr><td>Cloudflare (CDN, R2, Turnstile)</td><td>Бесплатно</td><td class="num">$0</td></tr>
+<tr><td>Итого</td><td></td><td class="num"><b>≈$10–20</b></td></tr>
+</tbody></table></div>
+<div class="risk">Бэкапы, обновления, мониторинг и пик продаж — на вас. Подходит, только если один из двоих уверенно администрирует Linux. Иначе экономия в $20 обходится дороже потерянным временем.</div>
+
+<h3>Чего не брать</h3>
+<ul>
+  <li><b>Vercel:</b> бесплатный план — только для некоммерческих проектов, Pro — $20 за каждого участника, то есть $40 на двоих. Cloudflare даёт то же примерно за $5.</li>
+  <li><b>Supabase Storage для 3D-сцен:</b> трафик сверх 250 ГБ стоит $0,09 за ГБ. R2 отдаёт бесплатно.</li>
+  <li><b>SMS для входа:</b> каждое сообщение платное. Telegram и e-mail-коды бесплатны.</li>
+</ul>
+<p><b>Разовые расходы:</b> домен (.kg или .com, примерно $10–30 в год, уточнить у регистратора). Дизайн — на готовом наборе shadcn/ui, нагрузочный тест k6 — локально, бесплатно.</p>
+
+<h2 id="data">9. Модель данных (основное)</h2>
+<pre><code>venues          id, name, city, address, geo
+venue_layouts   id, venue_id, version, params_json, obstacles_json, scene_url
+seats           id, layout_id, sector, row, number, x, y, z, view_limited
+events          id, layout_id, organizer_id, title, starts_at, sale_starts_at, is_hot, refund_rules
+price_zones     id, event_id, name, price, color
+event_seats     event_id, seat_id, zone_id, status(free|held|sold|blocked), order_id, hold_until
+                PRIMARY KEY (event_id, seat_id)
+orders          id, user_id, event_id, status, total, created_at, paid_at, idempotency_key
+tickets         id, order_id, seat_id, qr_payload, signature, scanned_at
+users           id, phone, email, name, role
+organizers      id, name, legal_info, payout_info
+audit_log       id, actor_id, action, payload, created_at</code></pre>
+
+<h2 id="plan">10. План работ</h2>
+<p>Команда — 2 человека, без отдельных дизайнера и тестировщика. <b>Первый</b> делает сайт, 3D и интерфейс на готовых компонентах. <b>Второй</b> — базу Supabase, бронь, кабинеты, сканер и нагрузку. Тестируют друг друга, сквозные сценарии покупки покрыты Playwright. Оплата подключается параллельно, по готовой схеме из других проектов.</p>
+
+<div class="phase"><div class="when"><b>Этап 0</b>1 неделя</div><div>
+  <b>Подготовка.</b>
+  <ul><li><b>Первый:</b> макеты ключевых экранов на shadcn/ui, перенос прототипа 3D в Next.js как компонент.</li><li><b>Второй:</b> проект Supabase, схема БД, формат JSON площадки, RLS.</li></ul>
+</div></div>
+<div class="phase"><div class="when"><b>Этап 1</b>недели 2–7</div><div>
+  <b>Покупка от начала до конца.</b>
+  <ul><li><b>Первый:</b> каталог, страница события, 2D и 3D выбор мест, вид с места, корзина с таймером, «Мои билеты».</li><li><b>Второй:</b> функция брони, снятие просроченных броней, вход через Telegram и e-mail, заказы, оплата-заглушка, QR, PDF и письма, статусы в реальном времени.</li></ul>
+</div></div>
+<div class="phase"><div class="when"><b>Этап 2</b>недели 8–11</div><div>
+  <b>Площадки и организаторы.</b>
+  <ul><li><b>Первый:</b> редактор зала с 3D-предпросмотром и препятствиями.</li><li><b>Второй:</b> кабинет организатора (событие, ценовые зоны, закрытые места, отчёты), PWA-сканер с офлайн-режимом.</li></ul>
+</div></div>
+<div class="phase"><div class="when"><b>Этап 3</b>недели 12–14</div><div>
+  <b>Нагрузка и защита.</b>
+  <ul><li><b>Второй:</b> виртуальная очередь, капча, лимиты, нагрузочный тест k6, мониторинг и бэкапы.</li><li><b>Первый:</b> упрощение 3D на слабых телефонах, режим деградации, тест на реальных бюджетных Android.</li></ul>
+</div></div>
+<div class="phase"><div class="when"><b>Этап 4</b>недели 15–16</div><div>
+  <b>Пилот в Бишкеке.</b>
+  <ul><li>Одна-две реальные площадки, точная разметка рядов и препятствий по чертежу или замерам.</li><li>Пробные продажи на небольшом событии, проверка входа со сканером.</li><li>Исправления по отзывам, затем открытый запуск.</li></ul>
+</div></div>
+<p><b>Итого MVP: около 4 месяцев на двоих.</b> Быстрее можно, если отложить редактор зала и первые площадки размечать вручную в JSON: минус 2–3 недели. Дальше <span class="tag v2">v2</span>: возвраты онлайн, передача билетов, путь до места, квоты и API для других операторов, фотореалистичные залы.</p>
+
+<h2 id="risks">11. Риски</h2>
+<div class="risk"><b>Точность площадок.</b> Если ряды и препятствия размечены неверно, 3D обманывает покупателя. Каждую площадку размечаем по чертежу или замерам и проверяем фото с 3–5 точек.</div>
+<div class="risk"><b>Двойные продажи при квотах.</b> Если организатор продаёт то же событие у конкурентов, места делятся квотами заранее. Без API синхронизации общих мест не продаём.</div>
+<div class="risk"><b>Слабые телефоны.</b> Часть аудитории на бюджетных Android. Нужны автоматическое упрощение сцены и 2D-вариант, тест на реальных устройствах.</div>
+<div class="risk"><b>Команда из двух человек.</b> Болезнь или уход одного останавливает половину проекта. Код в одном репозитории, короткий README по запуску, оба разбираются в функции брони.</div>
+<div class="risk"><b>Фискализация и возвраты.</b> Чеки и правила возврата зависят от оплаты и законодательства КР. Решаются вместе с подключением оплаты, но статусы заказа закладываем сразу.</div>
+
+<h2 id="accept">12. Критерии приёмки MVP</h2>
+<ul>
+  <li>Покупатель с телефона находит событие, садится на место в 3D, покупает и получает QR меньше чем за 3 минуты.</li>
+  <li>Нагрузочный тест: 30 000 пользователей, 8 000 мест, ноль двойных продаж, p95 брони меньше 300 мс.</li>
+  <li>Просроченная бронь освобождается не позже чем через 30 секунд после окончания таймера.</li>
+  <li>Сканер принимает билет без интернета и не пускает его второй раз после синхронизации.</li>
+  <li>Новая площадка заводится в редакторе за один рабочий день.</li>
+  <li>Без WebGL покупка проходит через 2D-схему.</li>
+</ul>
+</main>
+</div>
