@@ -29,6 +29,7 @@ export interface EventCard {
 export interface EventDetail extends EventCard {
   id: string;
   refundRules: string;
+  maxPerUser: number;
   layout: VenueLayout;
   /** По убыванию цены — тот же порядок, что индексы зон в event_seat_map */
   zones: PriceZone[];
@@ -41,11 +42,12 @@ interface EventRow {
   category: EventCategory;
   starts_at: string;
   refund_rules: string;
+  max_per_user: number;
   price_zones: PriceZone[];
   venue_layouts: { params: VenueLayout; venues: { name: string } };
 }
 
-const SELECT = "id, slug, title, category, starts_at, refund_rules, price_zones(name, price, color), venue_layouts(params, venues(name))";
+const SELECT = "id, slug, title, category, starts_at, refund_rules, max_per_user, price_zones(name, price, color), venue_layouts(params, venues(name))";
 
 const toCard = (r: EventRow): EventCard => ({
   slug: r.slug,
@@ -81,5 +83,5 @@ export async function getEvent(slug: string): Promise<EventDetail | null> {
   if (error) throw error;
   if (!data) return null;
   const r = data as unknown as EventRow;
-  return { ...toCard(r), id: r.id, refundRules: r.refund_rules, layout: r.venue_layouts.params, zones: r.price_zones };
+  return { ...toCard(r), id: r.id, refundRules: r.refund_rules, maxPerUser: r.max_per_user, layout: r.venue_layouts.params, zones: r.price_zones };
 }

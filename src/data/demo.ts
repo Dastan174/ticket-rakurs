@@ -14,15 +14,15 @@ export const LAYOUTS: Record<string, VenueLayout> = {
     stage: { x0: -21, x1: -13, halfZ: 9, height: 1.5 },
     screen: { pos: [-20.5, 6.5, 0], size: [16, 8] },
     boxes: [
-      { size: [8, 1.5, 18], pos: [-17, 0.75, 0], color: "#1c1f26" },
-      { size: [1.6, 7, 1.6], pos: [-14.5, 3.5, -10.5], color: "#0b0c10" },
-      { size: [1.6, 7, 1.6], pos: [-14.5, 3.5, 10.5], color: "#0b0c10" },
-      { size: [0.3, 10, 0.3], pos: [-13.5, 5, -11], color: "#555b66" },
-      { size: [0.3, 10, 0.3], pos: [-13.5, 5, 11], color: "#555b66" },
-      { size: [0.4, 0.4, 22], pos: [-13.5, 10, 0], color: "#555b66" },
+      { size: [8, 1.5, 18], pos: [-17, 0.75, 0], color: "#22201d" },
+      { size: [1.6, 7, 1.6], pos: [-14.5, 3.5, -10.5], color: "#0f0e0d" },
+      { size: [1.6, 7, 1.6], pos: [-14.5, 3.5, 10.5], color: "#0f0e0d" },
+      { size: [0.3, 10, 0.3], pos: [-13.5, 5, -11], color: "#5d5850" },
+      { size: [0.3, 10, 0.3], pos: [-13.5, 5, 11], color: "#5d5850" },
+      { size: [0.4, 0.4, 22], pos: [-13.5, 10, 0], color: "#5d5850" },
     ],
     zones: { by: "distance", origin: [-17, 0], thresholds: [18, 32] },
-    colors: { sky: "#07080d", bowl: "#2a2f3a", floor: "#15181f" },
+    colors: { sky: "#131210", bowl: "#2d2a26", floor: "#1b1916" },
   },
   stadium: {
     name: "Стадион «Центральный»",
@@ -55,7 +55,8 @@ export interface DemoEvent {
 }
 
 export const ZONE_NAMES = ["VIP", "Стандарт", "Эконом"];
-export const ZONE_COLORS = ["#f5b942", "#5b8cff", "#2bc4b6"];
+// Смальта: кобальт, бирюза, олива (DESIGN.md). Золото не использовать — оно для мест покупателя.
+export const ZONE_COLORS = ["#2550a8", "#1a8a82", "#6f7f33"];
 
 export const EVENTS: DemoEvent[] = [
   { slug: "synthwave-night", category: "concert", title: "Ночь синтвейва", startsAt: "2026-12-12T19:00:00+06:00", layout: "arena", prices: [9000, 5500, 2500] },

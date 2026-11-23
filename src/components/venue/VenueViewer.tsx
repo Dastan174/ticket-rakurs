@@ -8,6 +8,7 @@ import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
+import { ArrowLeft } from "@/components/icons";
 import { groundHeight } from "@/lib/venue/generate";
 import type { Seat, VenueLayout } from "@/lib/venue/types";
 
@@ -25,11 +26,14 @@ export interface VenueViewerProps {
   onSeatClick: (id: number) => void;
   onSeatOpen: (id: number) => void;
   onHover?: (id: number | null, x: number, y: number) => void;
+  /** Кресло в центре кадра на общем плане — для строки «что в кадре» */
+  onCenter?: (id: number | null) => void;
   onExitView: () => void;
 }
 
-const C_SOLD = new THREE.Color("#3a3f4b");
-const C_SEL = new THREE.Color("#4ade80");
+// Цвета мира «Смальта» (DESIGN.md): занятое — серый бетон, ваше — золотая смальта.
+const C_SOLD = new THREE.Color("#6b6e72");
+const C_SEL = new THREE.Color("#f0be2c");
 const C_HOVER = new THREE.Color("#ffffff");
 const KEYMAP: Record<string, string> = {
   KeyW: "f", ArrowUp: "f", KeyS: "b", ArrowDown: "b", KeyA: "l", ArrowLeft: "l", KeyD: "r", ArrowRight: "r",
@@ -37,6 +41,7 @@ const KEYMAP: Record<string, string> = {
 };
 
 type Mode = "overview" | "fly" | "view";
+const FLY_SECONDS = 1.1;
 
 interface Engine {
   paint: () => void;
@@ -144,7 +149,7 @@ export function VenueViewer(props: VenueViewerProps) {
       scene.add(screen);
     }
     if (layout.night) {
-      for (const [c, z] of [[0xff3cac, -6], [0x2bd9fe, 6]] as const) {
+      for (const [c, z] of [[0xffb347, -6], [0x7fa2ff, 6]] as const) {
         const l = new THREE.PointLight(c, 300, 40);
         l.position.set(layout.focus[0] + 3, 9, z);
         scene.add(l);
@@ -160,6 +165,14 @@ export function VenueViewer(props: VenueViewerProps) {
     const ndc = new THREE.Vector2();
     const ray = new THREE.Raycaster();
     let needPick = false;
+    // Вспышка выбора: только что выбранное кресло на мгновение светлеет и садится в золото
+    const flashes = new Map<number, number>();
+    let prevSelected = new Set<number>(live.current.selected);
+    const reducedMotion = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    // Точки опроса «что в кадре»: центр, затем чуть ниже/выше/по бокам — если в центре пол или сцена
+    const PROBES = [[0, 0], [0, -0.3], [0, 0.3], [-0.3, 0], [0.3, 0], [0, -0.6]].map(([x, y]) => new THREE.Vector2(x, y));
+    let centerId: number | null = null;
+    let centerClock = 0;
     let mouse = { x: 0, y: 0 };
     let down: { x: number; y: number; sx: number; sy: number } | null = null;
 
@@ -179,13 +192,17 @@ export function VenueViewer(props: VenueViewerProps) {
         const c = i === hoverIdx && mode === "overview" ? C_HOVER : selected.has(i) ? C_SEL : unavailable[i] ? C_SOLD : tmp.set(zoneColors[s.zone]);
         mesh.setColorAt(i, c);
       });
+      if (!reducedMotion()) for (const id of selected) if (!prevSelected.has(id)) flashes.set(id, performance.now());
+      prevSelected = new Set(selected);
       mesh.instanceColor!.needsUpdate = true;
     };
     paint();
 
     const lookPoint = () => new THREE.Vector3(0, 0, -10).applyQuaternion(camera.quaternion).add(camera.position);
     const flyTo = (p1: THREE.Vector3, l1: THREE.Vector3, done: () => void) => {
-      fly = { t: 0, p0: camera.position.clone(), l0: mode === "overview" ? controls.target.clone() : lookPoint(), p1, l1, done };
+      // Большое движение камеры может укачивать: при reduced motion — сразу конечный кадр.
+      const instant = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      fly = { t: instant ? 1 : 0, p0: camera.position.clone(), l0: mode === "overview" ? controls.target.clone() : lookPoint(), p1, l1, done };
     };
     const enterSeat = (id: number) => {
       const s = seats[id];
@@ -244,7 +261,8 @@ export function VenueViewer(props: VenueViewerProps) {
       camera.rotation.set(pitch, yaw, 0);
     };
 
-    const ease = (k: number) => (k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2);
+    // Экспоненциальное замедление: камера срывается быстро и мягко садится на место.
+    const ease = (k: number) => (k >= 1 ? 1 : 1 - Math.pow(2, -10 * k));
     let last = performance.now();
     let raf = 0;
     const loop = (t: number) => {
@@ -252,7 +270,7 @@ export function VenueViewer(props: VenueViewerProps) {
       const dt = Math.min((t - last) / 1000, 0.05);
       last = t;
       if (fly) {
-        fly.t += dt / 1.4;
+        fly.t += dt / FLY_SECONDS;
         const k = ease(Math.min(1, fly.t));
         camera.position.lerpVectors(fly.p0, fly.p1, k);
         camera.lookAt(new THREE.Vector3().lerpVectors(fly.l0, fly.l1, k));
@@ -263,6 +281,20 @@ export function VenueViewer(props: VenueViewerProps) {
         }
       } else if (mode === "overview") {
         controls.update();
+        centerClock += dt;
+        if (centerClock > 0.3) {
+          centerClock = 0;
+          let hit: number | null = null;
+          for (const p of PROBES) {
+            ray.setFromCamera(p, camera);
+            hit = ray.intersectObject(mesh)[0]?.instanceId ?? null;
+            if (hit !== null) break;
+          }
+          if (hit !== centerId) {
+            centerId = hit;
+            live.current.onCenter?.(hit);
+          }
+        }
         if (needPick) {
           needPick = false;
           const i = pick();
@@ -274,6 +306,17 @@ export function VenueViewer(props: VenueViewerProps) {
           canvas.style.cursor = i === null ? "" : live.current.unavailable[i] ? "not-allowed" : "pointer";
         }
       } else walk(dt);
+      if (flashes.size) {
+        const flashColor = new THREE.Color();
+        for (const [id, start] of flashes) {
+          const k = (t - start) / 320;
+          if (k >= 1) {
+            flashes.delete(id);
+            mesh.setColorAt(id, C_SEL);
+          } else mesh.setColorAt(id, flashColor.copy(C_HOVER).lerp(C_SEL, ease(Math.max(0, k))));
+        }
+        mesh.instanceColor!.needsUpdate = true;
+      }
       renderer.render(scene, camera);
     };
     raf = requestAnimationFrame(loop);
@@ -385,23 +428,23 @@ export function VenueViewer(props: VenueViewerProps) {
   };
 
   return (
-    <div ref={wrapRef} className="relative h-full w-full overflow-hidden bg-black">
+    <div ref={wrapRef} className="relative h-full w-full overflow-hidden bg-night">
       <canvas ref={canvasRef} className="block h-full w-full touch-none" aria-label="3D-схема зала" />
       {props.viewSeat !== null && (
         // На телефоне нет клавиатуры — стрелки для ходьбы
         <div className="absolute bottom-14 right-4 hidden grid-cols-3 gap-1.5 pointer-coarse:grid">
-          {([["f", "▲", "col-start-2"], ["l", "◀", "col-start-1 row-start-2"], ["b", "▼", "col-start-2 row-start-2"], ["r", "▶", "col-start-3 row-start-2"]] as const).map(([k, label, cls]) => (
+          {([["f", "вперёд", "col-start-2", 90], ["l", "влево", "col-start-1 row-start-2", 0], ["b", "назад", "col-start-2 row-start-2", 270], ["r", "вправо", "col-start-3 row-start-2", 180]] as const).map(([k, label, cls, rot]) => (
             <button
               key={k}
               type="button"
               aria-label={`Идти ${label}`}
-              className={`${cls} h-12 w-12 touch-none select-none rounded-xl border border-white/20 bg-white/10 text-lg`}
+              className={`${cls} on-night grid size-12 touch-none select-none place-items-center`}
               onPointerDown={() => padKey(k, true)}
               onPointerUp={() => padKey(k, false)}
               onPointerLeave={() => padKey(k, false)}
               onPointerCancel={() => padKey(k, false)}
             >
-              {label}
+              <ArrowLeft style={{ transform: `rotate(${rot}deg)` }} />
             </button>
           ))}
         </div>
@@ -423,15 +466,19 @@ function canvasTexture(w: number, h: number, draw: (c: CanvasRenderingContext2D)
 
 function screenTexture(title: string) {
   return canvasTexture(1024, 512, (c) => {
-    const g = c.createLinearGradient(0, 0, 1024, 512);
-    g.addColorStop(0, "#7c3aed");
-    g.addColorStop(1, "#db2777");
-    c.fillStyle = g;
+    // Графитовый экран с полосой смальты — без фиолетовых градиентов (DESIGN.md)
+    c.fillStyle = "#1e2226";
     c.fillRect(0, 0, 1024, 512);
-    c.fillStyle = "#fff";
-    c.font = "bold 84px system-ui";
+    const smalt = ["#2550a8", "#1a8a82", "#6f7f33"];
+    for (let i = 0; i < 32; i++) {
+      c.fillStyle = smalt[(i * 7) % 3];
+      c.fillRect(i * 32 + 2, 430, 28, 28);
+    }
+    const family = getComputedStyle(document.documentElement).getPropertyValue("--font-unbounded").trim() || "system-ui";
+    c.fillStyle = "#d6d3cc";
+    c.font = `700 76px ${family}`;
     c.textAlign = "center";
-    c.fillText(title, 512, 280, 960);
+    c.fillText(title, 512, 250, 940);
   });
 }
 

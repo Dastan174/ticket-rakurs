@@ -14,8 +14,8 @@ tools: Read, Grep, Glob, Edit, Write, Bash
 - Серверные компоненты по умолчанию; `"use client"` — только где нужны состояние, эффекты, браузерные API.
 - Данные Supabase на сервере — `src/lib/supabase/server.ts`, в браузере — `client.ts`.
 
-Вёрстка:
-- Цвета только из токенов `@theme` в `src/app/globals.css` (`bg-panel`, `text-mute`, `border-line`, `text-accent`), кнопки — `.btn-primary`, `.btn-ghost`.
+Вёрстка (система — `DESIGN.md`, прочитай перед работой):
+- Цвета только из токенов `@theme` в `src/app/globals.css` (`bg-concrete`, `bg-slab`, `border-grout`, `text-ink`, `text-mute`, смальта зон, `gold` — только места покупателя), кнопки — `.btn-primary`, `.btn-quiet`, плитка — `.tile`.
 - Сначала телефон (≈375 px), без горизонтальной прокрутки. Кнопки ≥ 44 px на тач-экранах.
 - Доступность: у кнопок-иконок `aria-label`, видимый фокус, выбор мест должен оставаться возможным без 3D (этап 1: список «сектор → ряд → место»).
 - Тексты на русском, коротко и по делу; цены — `formatSom`.

@@ -1,0 +1,85 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-23T10:30:00Z",
+  "title": "Design System: Ракурс",
+  "extensions": {
+    "colorMeta": {
+      "concrete": { "role": "neutral", "displayName": "Бетон", "tonalRamp": ["#e4e1da", "#d6d3cc", "#bab5ab"] },
+      "slab": { "role": "neutral", "displayName": "Плита" },
+      "grout": { "role": "neutral", "displayName": "Затирка" },
+      "ink": { "role": "primary", "displayName": "Графит" },
+      "mute": { "role": "neutral", "displayName": "Приглушённый" },
+      "cobalt-smalt": { "role": "secondary", "displayName": "Кобальтовая смальта" },
+      "turquoise-smalt": { "role": "secondary", "displayName": "Бирюзовая смальта" },
+      "moss-smalt": { "role": "secondary", "displayName": "Оливковая смальта" },
+      "gold-smalt": { "role": "tertiary", "displayName": "Золотая смальта — только «твоё»" },
+      "sold": { "role": "neutral", "displayName": "Занято" },
+      "brick": { "role": "error", "displayName": "Кирпич — ошибки" },
+      "night": { "role": "neutral", "displayName": "Ночь — фон 3D" }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Заголовок главной." },
+      "title": { "displayName": "Title", "purpose": "Название события." },
+      "row-title": { "displayName": "Row title", "purpose": "Название в строке афиши, до двух строк." },
+      "sum": { "displayName": "Sum", "purpose": "Итоговая сумма." },
+      "body": { "displayName": "Body", "purpose": "Интерфейс и текст, табличные цифры." },
+      "small": { "displayName": "Small", "purpose": "Подписи и подсказки." }
+    },
+    "shadows": [],
+    "motion": [
+      { "name": "ease-out-expo", "value": "cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "Нажатие кнопок (120ms), заполнение слотов (220ms)." },
+      { "name": "camera-fly", "value": "1 - 2^(-10t), 1.1s", "purpose": "Перелёт камеры к креслу; при reduced motion — мгновенно." },
+      { "name": "seat-flash", "value": "white → gold, 320ms, exp-out", "purpose": "Вспышка только что выбранного кресла в 3D; при reduced motion — нет." }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Главное действие экрана: «Забронировать N мест».",
+      "html": "<button class=\"ds-btn-primary\">Забронировать 2 места</button>",
+      "css": ".ds-btn-primary{background:#1e2226;color:#d6d3cc;font:600 15px 'Golos Text',sans-serif;padding:12px 16px;border:0;border-radius:4px;transition:transform 120ms cubic-bezier(.16,1,.3,1)}.ds-btn-primary:hover{background:#2c3237}.ds-btn-primary:active{transform:scale(.97)}"
+    },
+    {
+      "name": "Quiet Button",
+      "kind": "button",
+      "refersTo": "button-quiet",
+      "description": "Второстепенное действие, например «Посмотреть с этого места».",
+      "html": "<button class=\"ds-btn-quiet\">Посмотреть</button>",
+      "css": ".ds-btn-quiet{background:#e4e1da;color:#1e2226;font:500 15px 'Golos Text',sans-serif;padding:8px 14px;border:1px solid #bab5ab;border-radius:4px}.ds-btn-quiet:hover{border-color:#1e2226}"
+    },
+    {
+      "name": "Smalt Tile Legend",
+      "kind": "custom",
+      "refersTo": "tile",
+      "description": "Легенда цен плитками смальты с затиркой.",
+      "html": "<ul class=\"ds-legend\"><li><i style=\"background:#2550a8\"></i>VIP <b>9 000 сом</b></li><li><i style=\"background:#1a8a82\"></i>Стандарт <b>5 500 сом</b></li><li><i style=\"background:#6f7f33\"></i>Эконом <b>2 500 сом</b></li><li><i style=\"background:#6b6e72\"></i>Занято</li></ul>",
+      "css": ".ds-legend{display:flex;flex-wrap:wrap;gap:6px 16px;list-style:none;padding:0;margin:0;font:14px 'Golos Text',sans-serif;color:#1e2226}.ds-legend li{display:flex;align-items:center;gap:8px}.ds-legend i{width:12px;height:12px;border-radius:2px;box-shadow:0 0 0 1.5px #bab5ab}"
+    },
+    {
+      "name": "Ticket Slots",
+      "kind": "custom",
+      "refersTo": "tile",
+      "description": "Лимит билетов на человека: заполненные слоты — золото.",
+      "html": "<div class=\"ds-slots\"><i class=\"on\"></i><i class=\"on\"></i><i></i><i></i><i></i><i></i></div>",
+      "css": ".ds-slots{display:flex;gap:6px}.ds-slots i{width:14px;height:14px;border-radius:2px;background:#e4e1da;box-shadow:0 0 0 1.5px #bab5ab;transform:scale(.9)}.ds-slots i.on{background:#f0be2c;transform:scale(1)}"
+    }
+  ],
+  "narrative": {
+    "northStar": "Смальта",
+    "overview": "Мозаичные панно бишкекских остановок: смальта на сером бетоне. Зал — панно, кресло — плитка, ценовая зона — цветовое поле, места покупателя — золотая смальта. Рабочий экран покупки: привычные контролы, мир даёт палитру, шрифты, плотность и плитку.",
+    "keyCharacteristics": ["Светлый бетон и графит", "Смальта кодирует ценовые зоны", "Золото только для мест покупателя", "Unbounded + Golos Text, табличные цифры", "Без теней, углы 4px"],
+    "rules": [
+      { "name": "Правило золота", "body": "Золото означает «твоё» и больше ничего.", "section": "colors" },
+      { "name": "Смальта — это данные", "body": "Цвета смальты кодируют зоны, не декорируют разделы.", "section": "colors" },
+      { "name": "Без фиолетового", "body": "Никаких фиолетово-розовых градиентов и неона, в том числе в 3D.", "section": "colors" }
+    ],
+    "dos": ["Цвета только из токенов", "Подсказки для мыши и касания", "Учитывать prefers-reduced-motion"],
+    "donts": ["Золото вне мест покупателя", "Надзаголовки над заголовками", "Тени и пилюли", "Плитка как орнамент"]
+  }
+}

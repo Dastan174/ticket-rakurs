@@ -1,31 +1,111 @@
 @import "tailwindcss";
 
-/* Цвета проекта — только через эти токены (bg-panel, text-mute, border-line, text-accent …) */
+/*
+  Мир «Смальта»: мозаики бишкекских остановок. Светлый бетон, графитовый текст,
+  смальта — цвета ценовых зон, золотая смальта — только места покупателя.
+  Правила — DESIGN.md. Цвета только через эти токены.
+*/
 @theme {
-  --color-bg: #0d0f14;
-  --color-panel: #151922;
-  --color-line: #262c38;
-  --color-fg: #e8ebf1;
-  --color-mute: #8b93a5;
-  --color-accent: #4ade80;
-  --font-sans: var(--font-inter), system-ui, sans-serif;
+  --color-concrete: #d6d3cc; /* основа страницы */
+  --color-slab: #e4e1da; /* приподнятая плита: панели, строки списка */
+  --color-grout: #bab5ab; /* затирка: линии, рамки, пустые слоты */
+  --color-ink: #1e2226; /* текст и главная кнопка */
+  --color-mute: #50545a; /* второстепенный текст, ≥4.5:1 на concrete */
+  --color-cobalt: #2550a8; /* смальта: дорогая зона, ссылки, фокус */
+  --color-turquoise: #1a8a82; /* смальта: средняя зона */
+  --color-moss: #6f7f33; /* смальта: дешёвая зона */
+  --color-gold: #f0be2c; /* золотая смальта: только «ваше» */
+  --color-sold: #6b6e72; /* занятое место */
+  --color-brick: #93301f; /* ошибки */
+  --color-night: #131210; /* фон 3D-сцены и подложки над ней */
+
+  --font-sans: var(--font-golos), system-ui, sans-serif;
+  --font-display: var(--font-unbounded), var(--font-golos), sans-serif;
+
+  --radius-tile: 4px;
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+html {
+  color-scheme: light;
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
-  background: var(--color-bg);
-  color: var(--color-fg);
+  background: var(--color-concrete);
+  color: var(--color-ink);
+  caret-color: var(--color-cobalt);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Золото — только места покупателя, поэтому выделение текста кобальтовое */
+::selection {
+  background: var(--color-cobalt);
+  color: var(--color-concrete);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-cobalt);
+  outline-offset: 2px;
+  border-radius: var(--radius-tile);
+}
+
+* {
+  scrollbar-color: var(--color-grout) transparent;
+}
+
+a {
+  text-underline-offset: 3px;
+}
+
+/* Убирает задержку двойного тапа на кнопках и ссылках */
+a,
+button {
+  touch-action: manipulation;
 }
 
 @layer components {
   .btn-primary {
-    @apply rounded-[10px] bg-accent px-4 py-2.5 font-bold text-[#05200f] disabled:cursor-not-allowed disabled:opacity-40;
+    @apply inline-flex items-center justify-center gap-2 rounded-tile bg-ink px-4 py-3 font-semibold text-concrete;
+    transition: transform 120ms var(--ease-out-expo), background-color 160ms;
   }
-  .btn-ghost {
-    @apply rounded-[10px] border border-white/15 bg-white/10 px-3.5 py-2 backdrop-blur hover:bg-white/15;
+  .btn-primary:hover:not(:disabled) {
+    background: #2c3237;
+  }
+  .btn-primary:active:not(:disabled) {
+    transform: scale(0.97);
+  }
+  .btn-primary:disabled {
+    @apply cursor-not-allowed bg-grout text-mute;
+  }
+
+  .btn-quiet {
+    @apply inline-flex items-center justify-center gap-2 rounded-tile border border-grout bg-slab px-3.5 py-2 font-medium text-ink;
+    transition: transform 120ms var(--ease-out-expo), border-color 160ms;
+  }
+  .btn-quiet:hover {
+    border-color: var(--color-ink);
+  }
+  .btn-quiet:active {
+    transform: scale(0.97);
+  }
+
+  /* Плитка смальты: легенда, слоты, знак. Затирка — рамка цвета grout. */
+  .tile {
+    @apply inline-block size-3 shrink-0 rounded-[2px];
+    box-shadow: 0 0 0 1.5px var(--color-grout);
+  }
+
+  /* Подложка поверх тёмной 3D-сцены */
+  .on-night {
+    @apply rounded-tile bg-night/80 text-concrete backdrop-blur-sm;
   }
 }
 
-:focus-visible {
-  outline: 2px solid var(--color-accent);
-  outline-offset: 2px;
+@media (prefers-reduced-motion: reduce) {
+  .btn-primary,
+  .btn-quiet,
+  .slot {
+    transition: none !important;
+  }
 }
